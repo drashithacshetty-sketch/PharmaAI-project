@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="PharmaAI - Next-Gen Clinical Pharmacy Inventory Management & AI Demand Forecasting System.">
+  <title>{% block title %}PharmaAI{% endblock %} | Pharmacy Operations Intelligence</title>
+  
+  <!-- Google Fonts: Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Bootstrap 5.3.3 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  
+  <!-- Bootstrap Icons 1.11.3 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  
+  <!-- Custom PharmaAI Styles -->
+  <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+  
+  <!-- Chart.js 4.4 -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+  <!-- Sticky Enterprise Dark Glass Navbar -->
+  <nav class="navbar navbar-expand-xl navbar-medismart">
+    <div class="container-fluid px-lg-4">
+      <a class="navbar-brand brand-logo" href="{{ url_for('main.index') }}">
+        <div class="brand-icon-wrapper">
+          <i class="bi bi-capsule-pill"></i>
+        </div>
+        <span class="brand-text">Pharma<span class="brand-ai-badge">AI</span></span>
+      </a>
+
+      <button class="navbar-toggler text-white border-0 p-1" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent" aria-controls="navbarContent" aria-expanded="false" aria-label="Toggle navigation">
+        <i class="bi bi-list fs-2 text-white"></i>
+      </button>
+
+      <div class="collapse navbar-collapse" id="navbarContent">
+        <ul class="navbar-nav me-auto mb-2 mb-xl-0 ms-xl-3 gap-1">
+          {% if current_user.is_authenticated and request.endpoint != 'main.index' %}
+            <!-- Internal Pharmacy Operations Navigation (Visible inside Dashboard & Internal Pages Only) -->
+            <li class="nav-item">
+              <a class="nav-link {% if request.endpoint == 'main.dashboard' %}active{% endif %}" href="{{ url_for('main.dashboard') }}">
+                <i class="bi bi-grid-1x2-fill"></i>
+                <span>Dashboard</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link {% if request.endpoint and 'medicines' in request.endpoint %}active{% endif %}" href="{{ url_for('medicines.index') }}">
+                <i class="bi bi-prescription2"></i>
+                <span>Medicines</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link {% if request.endpoint and 'batches' in request.endpoint %}active{% endif %}" href="{{ url_for('batches.index') }}">
+                <i class="bi bi-boxes"></i>
+                <span>Batches</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link {% if request.endpoint and 'sales' in request.endpoint %}active{% endif %}" href="{{ url_for('sales.index') }}">
+                <i class="bi bi-receipt"></i>
+                <span>Sales & POS</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link {% if request.endpoint and 'expiry' in request.endpoint %}active{% endif %}" href="{{ url_for('expiry.index') }}">
+                <i class="bi bi-clock-history text-danger"></i>
+                <span>Expiry Radar</span>
+                {% if critical_expiry_count > 0 %}
+                  <span class="nav-counter nav-counter-critical">{{ critical_expiry_count }}</span>
+                {% endif %}
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link {% if request.endpoint and 'forecast' in request.endpoint %}active{% endif %}" href="{{ url_for('forecast.index') }}">
+                <i class="bi bi-cpu-fill text-warning"></i>
+                <span>AI Forecast</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link {% if request.endpoint and 'reorder' in request.endpoint %}active{% endif %}" href="{{ url_for('reorder.index') }}">
+                <i class="bi bi-cart-check-fill text-info"></i>
+                <span>Smart Reorder</span>
+                {% if low_stock_count > 0 %}
+                  <span class="nav-counter nav-counter-warning">{{ low_stock_count }}</span>
+                {% endif %}
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link {% if request.endpoint and 'purchase_orders' in request.endpoint %}active{% endif %}" href="{{ url_for('purchase_orders.index') }}">
+                <i class="bi bi-truck"></i>
+                <span>Procurement</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link {% if request.endpoint and 'suppliers' in request.endpoint %}active{% endif %}" href="{{ url_for('suppliers.index') }}">
+                <i class="bi bi-building"></i>
+                <span>Suppliers</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link {% if request.endpoint and 'reports' in request.endpoint %}active{% endif %}" href="{{ url_for('reports.index') }}">
+                <i class="bi bi-file-earmark-bar-graph"></i>
+                <span>Reports</span>
+              </a>
+            </li>
+          {% else %}
+            <!-- Public / Landing Page Navigation -->
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('main.index') }}#home">Home</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('main.index') }}#features">How FEFO Works</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('main.index') }}#how-it-works">3-Step Flow</a>
+            </li>
+          {% endif %}
+        </ul>
+
+        <div class="d-flex align-items-center gap-2 mt-3 mt-xl-0">
+          {% if current_user.is_authenticated %}
+            {% if request.endpoint == 'main.index' %}
+              <!-- On Landing Page: Direct Button to Sign In & Operations Dashboard -->
+              <a href="{{ url_for('auth.login') }}" class="btn btn-outline-light btn-sm px-3 py-2 d-inline-flex align-items-center gap-2" style="background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.2);">
+                <i class="bi bi-box-arrow-in-right text-emerald"></i>
+                <span>Sign In</span>
+              </a>
+              <a href="{{ url_for('main.dashboard') }}" class="btn btn-emerald btn-sm px-3 py-2 d-inline-flex align-items-center gap-2 shadow btn-pulse-glow">
+                <i class="bi bi-speedometer2"></i>
+                <span>Operations Dashboard &rarr;</span>
+              </a>
+              <div class="dropdown">
+                <button class="user-profile-button dropdown-toggle border-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                  <div class="user-avatar-initials">
+                    {{ current_user.full_name[:2]|upper if current_user.full_name else 'US' }}
+                  </div>
+                  <div class="text-start d-none d-md-block lh-1">
+                    <div class="fw-bold small text-white">{{ current_user.full_name }}</div>
+                    <span class="text-white-50" style="font-size: 0.7rem;">{{ current_user.role }}</span>
+                  </div>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-dark-glass dropdown-menu-end">
+                  <li class="px-3 py-2 border-bottom border-secondary border-opacity-25">
+                    <div class="small text-white-50">Signed in as</div>
+                    <div class="fw-bold text-white">{{ current_user.username }} ({{ current_user.role }})</div>
+                  </li>
+                  <li><a class="dropdown-item mt-1" href="{{ url_for('main.dashboard') }}"><i class="bi bi-speedometer2 text-emerald"></i> Operations Dashboard</a></li>
+                  <li><a class="dropdown-item" href="{{ url_for('sales.create') }}"><i class="bi bi-cash-coin text-warning"></i> Fast POS Billing</a></li>
+                  <li><a class="dropdown-item" href="{{ url_for('auth.login') }}"><i class="bi bi-arrow-left-right text-info"></i> Switch Account / Login</a></li>
+                  <li><hr class="dropdown-divider"></li>
+                  <li><a class="dropdown-item text-danger" href="{{ url_for('auth.logout') }}"><i class="bi bi-box-arrow-right"></i> Sign Out</a></li>
+                </ul>
+              </div>
+            {% else %}
+              <!-- Inside Dashboard & Internal Pages: Live Telemetry, Quick Sale & User Profile -->
+              <div class="badge-live-node d-none d-xxl-inline-flex">
+                <span class="pulse-dot"></span>
+                <span>Dispensary Node #1</span>
+              </div>
+              <a href="{{ url_for('sales.create') }}" class="btn-quick-sale">
+                <i class="bi bi-cart-plus-fill"></i>
+                <span>POS Billing</span>
+              </a>
+              <div class="dropdown">
+                <button class="user-profile-button dropdown-toggle border-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                  <div class="user-avatar-initials">
+                    {{ current_user.full_name[:2]|upper if current_user.full_name else 'US' }}
+                  </div>
+                  <div class="text-start d-none d-md-block lh-1">
+                    <div class="fw-bold small text-white">{{ current_user.full_name }}</div>
+                    <span class="text-white-50" style="font-size: 0.7rem;">{{ current_user.role }}</span>
+                  </div>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-dark-glass dropdown-menu-end">
+                  <li class="px-3 py-2 border-bottom border-secondary border-opacity-25">
+                    <div class="small text-white-50">Signed in as</div>
+                    <div class="fw-bold text-white">{{ current_user.username }} ({{ current_user.role }})</div>
+                  </li>
+                  <li><a class="dropdown-item mt-1" href="{{ url_for('main.dashboard') }}"><i class="bi bi-speedometer2 text-emerald"></i> Operations Dashboard</a></li>
+                  <li><a class="dropdown-item" href="{{ url_for('sales.create') }}"><i class="bi bi-cash-coin text-warning"></i> Fast POS Billing</a></li>
+                  <li><a class="dropdown-item" href="{{ url_for('expiry.index') }}"><i class="bi bi-shield-exclamation text-danger"></i> Expiry Radar</a></li>
+                  <li><a class="dropdown-item" href="{{ url_for('auth.login') }}"><i class="bi bi-arrow-left-right text-info"></i> Switch Account / Login</a></li>
+                  <li><hr class="dropdown-divider"></li>
+                  <li><a class="dropdown-item text-danger" href="{{ url_for('auth.logout') }}"><i class="bi bi-box-arrow-right"></i> Sign Out</a></li>
+                </ul>
+              </div>
+            {% endif %}
+          {% else %}
+            <a href="{{ url_for('auth.login') }}" class="btn btn-emerald btn-sm px-3 py-2 d-inline-flex align-items-center gap-2 shadow btn-pulse-glow">
+              <i class="bi bi-box-arrow-in-right"></i>
+              <span>Sign In</span>
+            </a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Flash Messages -->
+  <div class="container-fluid px-lg-4 mt-3">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show shadow-sm border-0" role="alert" style="border-radius: var(--radius-sm);">
+            <div class="d-flex align-items-center gap-2">
+              {% if category == 'success' %}
+                <i class="bi bi-check-circle-fill fs-5 text-success"></i>
+              {% elif category == 'danger' %}
+                <i class="bi bi-exclamation-octagon-fill fs-5 text-danger"></i>
+              {% elif category == 'warning' %}
+                <i class="bi bi-exclamation-triangle-fill fs-5 text-warning"></i>
+              {% else %}
+                <i class="bi bi-info-circle-fill fs-5 text-primary"></i>
+              {% endif %}
+              <div>{{ message }}</div>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+  </div>
+
+  <!-- Main Content Container with Smooth Entrance Animation -->
+  <main class="flex-grow-1 page-transition">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- Footer -->
+  <footer class="py-5" style="background: #090e17; color: #94a3b8; border-top: 1px solid rgba(255, 255, 255, 0.08);">
+    <div class="container-fluid px-lg-5">
+      <div class="row g-4">
+        <div class="col-lg-4 col-md-6">
+          <div class="d-flex align-items-center gap-2 mb-3">
+            <div class="brand-icon-wrapper" style="width: 32px; height: 32px; font-size: 1rem;">
+              <i class="bi bi-capsule-pill"></i>
+            </div>
+            <h5 class="mb-0 text-white fw-bold">Pharma<span style="color: var(--emerald-400);">AI</span></h5>
+          </div>
+          <p class="small pe-lg-4" style="line-height: 1.6;">
+            Next-generation clinical inventory intelligence, demand forecasting with Scikit-Learn, and automated First-Expiry, First-Out (FEFO) dispensing optimization.
+          </p>
+          <div class="p-2 px-3 rounded small" style="background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08);">
+            <i class="bi bi-shield-check text-success me-1"></i>
+            <strong>Compliance Status:</strong> Strict FEFO Enforcement Active &bull; Zero Negative Stock Guarantee.
+          </div>
+        </div>
+
+        <div class="col-lg-2 col-md-3 col-6">
+          <h6 class="text-white fw-bold text-uppercase small mb-3" style="letter-spacing: 0.05em;">Core Systems</h6>
+          <ul class="list-unstyled d-flex flex-column gap-2 small">
+            <li><a href="{{ url_for('medicines.index') }}" class="text-secondary text-decoration-none hover-white">Medicine Catalog</a></li>
+            <li><a href="{{ url_for('batches.index') }}" class="text-secondary text-decoration-none">FEFO Batch Ledger</a></li>
+            <li><a href="{{ url_for('sales.index') }}" class="text-secondary text-decoration-none">Point of Sale (POS)</a></li>
+            <li><a href="{{ url_for('expiry.index') }}" class="text-secondary text-decoration-none">Expiry Risk Radar</a></li>
+            <li><a href="{{ url_for('forecast.index') }}" class="text-secondary text-decoration-none">AI Demand Forecaster</a></li>
+          </ul>
+        </div>
+
+        <div class="col-lg-2 col-md-3 col-6">
+          <h6 class="text-white fw-bold text-uppercase small mb-3" style="letter-spacing: 0.05em;">Replenishment</h6>
+          <ul class="list-unstyled d-flex flex-column gap-2 small">
+            <li><a href="{{ url_for('reorder.index') }}" class="text-secondary text-decoration-none">Smart Reorder Engine</a></li>
+            <li><a href="{{ url_for('purchase_orders.index') }}" class="text-secondary text-decoration-none">Purchase Orders</a></li>
+            <li><a href="{{ url_for('suppliers.index') }}" class="text-secondary text-decoration-none">Supplier Directory</a></li>
+            <li><a href="{{ url_for('reports.index') }}" class="text-secondary text-decoration-none">Operational Reports</a></li>
+            <li><a href="{{ url_for('reports.export_inventory_csv') }}" class="text-secondary text-decoration-none">Export Inventory CSV</a></li>
+          </ul>
+        </div>
+
+        <div class="col-lg-4 col-md-12">
+          <h6 class="text-white fw-bold text-uppercase small mb-3" style="letter-spacing: 0.05em;">Academic Implementation</h6>
+          <p class="small mb-3">
+            <strong>System Architecture:</strong> Python Flask, SQLAlchemy, Scikit-Learn RandomForest, Bootstrap 5, Chart.js.<br>
+            <strong>Project Standard:</strong> MCA Final Year Capstone Project.
+          </p>
+          <div class="d-flex flex-wrap gap-2">
+            <span class="badge" style="background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.1);">Python 3.11</span>
+            <span class="badge" style="background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.1);">Flask 3.0</span>
+            <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3);">Random Forest ML</span>
+            <span class="badge" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3);">FEFO Engine</span>
+          </div>
+        </div>
+      </div>
+
+      <hr style="border-color: rgba(255, 255, 255, 0.08);" class="my-4">
+
+      <div class="d-flex flex-column flex-md-row justify-content-between align-items-center text-secondary small">
+        <div>&copy; 2026 PharmaAI System. All rights reserved. Clinical Logistics Engineering.</div>
+        <div class="mt-2 mt-md-0 d-flex align-items-center gap-2">
+          <span class="pulse-dot"></span>
+          <span class="text-white-50">Dispensary Operations Active &bull; Version 2.4.0</span>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Global Modals Container (Direct child of body to guarantee correct z-index stacking) -->
+  {% block modals %}{% endblock %}
+
+  <!-- Bootstrap 5.3.3 Bundle JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  
+  {% block extra_scripts %}{% endblock %}
+</body>
+</html>

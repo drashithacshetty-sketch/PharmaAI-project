@@ -1,0 +1,232 @@
+{% extends "base.html" %}
+
+{% block title %}{{ medicine.name }} | PharmaAI{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-lg-4 py-4">
+  <!-- Header -->
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+    <div>
+      <div class="d-flex align-items-center gap-2">
+        <h2 class="fw-bold text-navy mb-0">{{ medicine.name }}</h2>
+        {% if medicine.usable_stock <= 0 %}
+          <span class="badge-pill badge-critical"><i class="bi bi-x-circle-fill"></i> Stockout</span>
+        {% elif medicine.is_low_stock %}
+          <span class="badge-pill badge-warning"><i class="bi bi-exclamation-triangle-fill"></i> Low Stock</span>
+        {% else %}
+          <span class="badge-pill badge-active"><i class="bi bi-check-circle-fill"></i> In Stock</span>
+        {% endif %}
+      </div>
+      <p class="text-muted small mb-0">{{ medicine.generic_name }} | {{ medicine.category }} | {{ medicine.dosage_form }} ({{ medicine.strength }})</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('batches.create', medicine_id=medicine.id) }}" class="btn btn-emerald btn-sm">
+        <i class="bi bi-plus-circle"></i> Add Batch
+      </a>
+      <a href="{{ url_for('purchase_orders.create', medicine_id=medicine.id) }}" class="btn btn-outline-emerald btn-sm">
+        <i class="bi bi-truck"></i> Create PO
+      </a>
+      <a href="{{ url_for('medicines.edit', id=medicine.id) }}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-pencil"></i> Edit
+      </a>
+      <a href="{{ url_for('medicines.index') }}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left"></i> Back
+      </a>
+    </div>
+  </div>
+
+  <!-- KPI Info Cards -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-3 col-sm-6">
+      <div class="kpi-card">
+        <div>
+          <div class="kpi-title">Usable Stock</div>
+          <div class="kpi-value text-navy">{{ medicine.usable_stock }}</div>
+          <div class="small text-muted">{{ medicine.unit }}s non-expired</div>
+        </div>
+        <div class="kpi-icon-box kpi-icon-emerald"><i class="bi bi-boxes"></i></div>
+      </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+      <div class="kpi-card">
+        <div>
+          <div class="kpi-title">Reorder Level</div>
+          <div class="kpi-value text-warning">{{ medicine.reorder_level }}</div>
+          <div class="small text-muted">Minimum threshold</div>
+        </div>
+        <div class="kpi-icon-box kpi-icon-amber"><i class="bi bi-arrow-down-circle"></i></div>
+      </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+      <div class="kpi-card">
+        <div>
+          <div class="kpi-title">Pack Size</div>
+          <div class="kpi-value text-navy">{{ medicine.pack_size }}</div>
+          <div class="small text-muted">Units per supplier box</div>
+        </div>
+        <div class="kpi-icon-box kpi-icon-navy"><i class="bi bi-box"></i></div>
+      </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+      <div class="kpi-card">
+        <div>
+          <div class="kpi-title">Selling Price</div>
+          <div class="kpi-value text-emerald">₹{{ "{:,.2f}".format(medicine.default_selling_price) }}</div>
+          <div class="small text-muted">Latest active batch</div>
+        </div>
+        <div class="kpi-icon-box kpi-icon-emerald"><i class="bi bi-currency-rupee"></i></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FEFO Batches Section -->
+  <div class="card-modern mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-clock-history text-primary fs-5"></i>
+        <span>Batches in First Expiry, First Out (FEFO) Queue</span>
+      </div>
+      <span class="badge bg-primary-subtle text-primary">Earliest Expiry Dispensed First</span>
+    </div>
+    <div class="card-body p-0">
+      {% if batches %}
+        <div tabindex="0" role="region" aria-label="FEFO Batches Queue Table" class="table-wrapper border-0 rounded-0 shadow-none">
+          <table class="table-medismart">
+            <thead>
+              <tr>
+                <th>FEFO Priority</th>
+                <th>Batch Number</th>
+                <th>Expiry Date</th>
+                <th>Days Remaining</th>
+                <th>Purchase Cost</th>
+                <th>Selling Price</th>
+                <th>Initial Qty</th>
+                <th>Current Qty</th>
+                <th>Batch Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for b in batches %}
+                <tr {% if loop.first and b.current_quantity > 0 and not b.is_expired %}style="background-color: var(--pale-mint);"{% endif %}>
+                  <td>
+                    {% if b.is_expired %}
+                      <span class="badge bg-danger">EXPIRED - DO NOT SELL</span>
+                    {% elif b.current_quantity <= 0 %}
+                      <span class="badge bg-secondary">Depleted</span>
+                    {% elif loop.first %}
+                      <span class="badge bg-success"><i class="bi bi-star-fill me-1"></i> NEXT IN FEFO</span>
+                    {% else %}
+                      <span class="badge bg-light text-dark border">Priority #{{ loop.index }}</span>
+                    {% endif %}
+                  </td>
+                  <td><code>{{ b.batch_number }}</code></td>
+                  <td>{{ b.expiry_date.strftime('%Y-%m-%d') }}</td>
+                  <td>
+                    {% if b.days_until_expiry <= 0 %}
+                      <span class="text-danger fw-bold">Expired {{ b.days_until_expiry|abs }} days ago</span>
+                    {% elif b.days_until_expiry <= 7 %}
+                      <span class="text-danger fw-bold">{{ b.days_until_expiry }} days (Critical)</span>
+                    {% elif b.days_until_expiry <= 30 %}
+                      <span class="text-warning fw-bold">{{ b.days_until_expiry }} days (Soon)</span>
+                    {% else %}
+                      <span class="text-success">{{ b.days_until_expiry }} days</span>
+                    {% endif %}
+                  </td>
+                  <td>₹{{ "{:,.2f}".format(b.purchase_price) }}</td>
+                  <td class="fw-bold">₹{{ "{:,.2f}".format(b.selling_price) }}</td>
+                  <td>{{ b.initial_quantity }}</td>
+                  <td class="fw-bold fs-6">{{ b.current_quantity }}</td>
+                  <td>
+                    {% if b.status == 'Active' %}
+                      <span class="badge-pill badge-active">Active</span>
+                    {% elif b.status == 'Expiring Soon' %}
+                      <span class="badge-pill badge-warning">Expiring Soon</span>
+                    {% elif b.status == 'Expired' %}
+                      <span class="badge-pill badge-critical">Expired</span>
+                    {% else %}
+                      <span class="badge-pill badge-depleted">Depleted</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if b.is_expired and b.current_quantity > 0 %}
+                      <form method="POST" action="{{ url_for('batches.discard', id=b.id) }}" class="d-inline" onsubmit="return confirm('Confirm safe disposal of expired batch?');">
+                        <button type="submit" class="btn btn-sm btn-outline-danger">Discard</button>
+                      </form>
+                    {% else %}
+                      <span class="text-muted small">Valid</span>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="text-center py-4 text-muted">
+          No batches registered for this medicine yet. <a href="{{ url_for('batches.create', medicine_id=medicine.id) }}">Add first batch</a>.
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Stock Movements Audit Trail -->
+  <div class="card-modern">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-clock-history text-secondary fs-5"></i>
+        <span>Stock Movements & Audit History</span>
+      </div>
+      <span class="small text-muted">Immutable Ledger</span>
+    </div>
+    <div class="card-body p-0">
+      {% if movements %}
+        <div tabindex="0" role="region" aria-label="Stock Movements Audit Ledger Table" class="table-wrapper border-0 rounded-0 shadow-none">
+          <table class="table-medismart">
+            <thead>
+              <tr>
+                <th>Date & Time</th>
+                <th>Type</th>
+                <th>Qty Change</th>
+                <th>Previous Stock</th>
+                <th>New Stock</th>
+                <th>Reference</th>
+                <th>Reason</th>
+                <th>User</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for m in movements %}
+                <tr>
+                  <td>{{ m.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                  <td>
+                    {% if m.movement_type == 'SALE' %}
+                      <span class="badge bg-info-subtle text-info border">Sale</span>
+                    {% elif m.movement_type == 'PURCHASE_RECEIPT' %}
+                      <span class="badge bg-success-subtle text-success border">PO Receipt</span>
+                    {% elif m.movement_type == 'EXPIRED_REMOVAL' %}
+                      <span class="badge bg-danger-subtle text-danger border">Expired Disposal</span>
+                    {% else %}
+                      <span class="badge bg-secondary-subtle text-secondary border">{{ m.movement_type }}</span>
+                    {% endif %}
+                  </td>
+                  <td class="fw-bold {% if m.quantity_change > 0 %}text-success{% else %}text-danger{% endif %}">
+                    {{ "%+d"|format(m.quantity_change) }}
+                  </td>
+                  <td>{{ m.previous_stock }}</td>
+                  <td class="fw-bold">{{ m.new_stock }}</td>
+                  <td><code>{{ m.reference_id or 'N/A' }}</code></td>
+                  <td><span class="small text-muted">{{ m.reason or '' }}</span></td>
+                  <td><small>{{ m.author.username if m.author else 'System' }}</small></td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="text-center py-4 text-muted">No stock movements logged yet.</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

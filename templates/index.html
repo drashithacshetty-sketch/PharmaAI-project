@@ -1,0 +1,336 @@
+{% extends "base.html" %}
+
+{% block title %}Next-Gen AI Pharmacy Inventory & Expiry Management{% endblock %}
+
+{% block content %}
+<!-- Magnetic Hero Section with Real Medicine Photography & Micro-Animations -->
+<section id="home" class="hero-section">
+  <div class="hero-grid-bg"></div>
+  <div class="container-fluid px-lg-5">
+    <div class="row align-items-center g-5">
+      <!-- Left Column: Attractive & Persuasive Value Proposition -->
+      <div class="col-lg-6">
+        <div class="hero-chip animate-fade-in-up">
+          <i class="bi bi-shield-check text-emerald fs-6"></i>
+          <span>Automated Clinical FEFO Logistics</span>
+          <span class="hero-chip-badge">Zero Waste Guarantee</span>
+        </div>
+
+        <h1 class="hero-title animate-fade-in-up delay-1">
+          Never Lose a Single Rupee to <span class="hero-title-gradient">Expired Medicine</span> Again.
+        </h1>
+
+        <p class="hero-subtitle animate-fade-in-up delay-2">
+          Pharmacies lose up to <strong>8% of annual revenue</strong> from neglected expiration dates and stockouts. <strong>PharmaAI</strong> automatically dispatches your nearest-expiry batches first at checkout, runs 24/7 expiry radar, and forecasts patient demand with machine learning.
+        </p>
+
+        <!-- Interactive Clinical FEFO Dispatch Terminal (Live Dynamic Simulator) -->
+        <div class="fefo-console-card animate-fade-in-up delay-3">
+          <div class="fefo-console-header">
+            <div class="d-flex align-items-center gap-2">
+              <span class="pulse-dot"></span>
+              <span class="fefo-terminal-title">AUTONOMOUS FEFO DISPATCH TERMINAL</span>
+            </div>
+            <div class="fefo-console-pill">
+              <i class="bi bi-shield-check"></i>
+              <span>Zero-Expiry Algorithm Active</span>
+            </div>
+          </div>
+
+          <!-- Interactive Rx Simulation Card -->
+          <div class="fefo-rx-banner">
+            <div>
+              <div class="d-flex align-items-center gap-2 mb-1">
+                <span class="badge bg-primary bg-opacity-25 text-info border border-info border-opacity-25" style="font-size: 0.72rem;">Rx #4921</span>
+                <span class="fefo-rx-title" id="demoMedName">Augmentin 625 Duo (Amoxicillin IP)</span>
+              </div>
+              <div class="fefo-rx-subtitle">
+                Incoming Checkout: <strong class="text-white" id="demoMedQty">10 Strip Units</strong> &bull; Scanned across all active batches
+              </div>
+            </div>
+
+            <!-- Interactive medicine simulator switcher buttons -->
+            <div class="d-flex gap-1" id="demoSwitcherGroup">
+              <button type="button" class="med-switch-btn active" onclick="switchDemoMed(0, this)">Augmentin</button>
+              <button type="button" class="med-switch-btn" onclick="switchDemoMed(1, this)">Paracetamol</button>
+              <button type="button" class="med-switch-btn" onclick="switchDemoMed(2, this)">Azithromycin</button>
+            </div>
+          </div>
+
+          <!-- Batch Decision Matrix -->
+          <div class="fefo-batch-matrix mb-3" id="demoBatchContainer">
+            <!-- Priority Winner Batch -->
+            <div class="fefo-batch-item fefo-batch-winner" id="batchWinnerCard">
+              <div class="d-flex align-items-center gap-3">
+                <div class="rounded-circle d-flex align-items-center justify-content-center bg-emerald bg-opacity-20 text-emerald" style="width: 34px; height: 34px; flex-shrink: 0;">
+                  <i class="bi bi-check-lg fw-bold fs-5"></i>
+                </div>
+                <div>
+                  <div class="d-flex align-items-center gap-2">
+                    <span class="fefo-batch-code" id="batchWinnerCode">BATCH-AUG-2026-01</span>
+                    <span class="badge bg-success text-white px-2 py-1" style="font-size: 0.68rem; letter-spacing: 0.04em;">PRIORITY #1 DISPATCH</span>
+                  </div>
+                  <div class="fefo-batch-meta text-emerald mt-1" id="batchWinnerMeta">
+                    <i class="bi bi-hourglass-split me-1"></i> <strong>Expires in 18 Days</strong> &bull; Auto-allocated to preserve pharmacy margins
+                  </div>
+                </div>
+              </div>
+              <div class="text-end d-none d-sm-block">
+                <span class="badge" style="background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4);">
+                  <i class="bi bi-arrow-right-circle me-1"></i> Next in Queue
+                </span>
+              </div>
+            </div>
+
+            <!-- Held In Vault Batch -->
+            <div class="fefo-batch-item fefo-batch-held" id="batchHeldCard">
+              <div class="d-flex align-items-center gap-3">
+                <div class="rounded-circle d-flex align-items-center justify-content-center bg-secondary bg-opacity-20 text-white-50" style="width: 34px; height: 34px; flex-shrink: 0;">
+                  <i class="bi bi-lock-fill fs-6"></i>
+                </div>
+                <div>
+                  <div class="d-flex align-items-center gap-2">
+                    <span class="fefo-batch-code text-white-50" id="batchHeldCode">BATCH-AUG-2027-09</span>
+                    <span class="badge bg-secondary text-white-50 px-2 py-1" style="font-size: 0.68rem;">HELD IN VAULT</span>
+                  </div>
+                  <div class="fefo-batch-meta text-white-50 mt-1" id="batchHeldMeta">
+                    <i class="bi bi-shield-check me-1"></i> Expires in 385 Days &bull; Locked to prevent premature sale of fresh stock
+                  </div>
+                </div>
+              </div>
+              <div class="text-end d-none d-sm-block">
+                <span class="badge text-white-50" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1);">
+                  Protected
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Micro Telemetry Live Meter -->
+          <div class="d-flex align-items-center justify-content-between text-white-50 small mb-3 pb-2 border-bottom border-white border-opacity-10">
+            <span class="d-flex align-items-center gap-2">
+              <i class="bi bi-lightning-charge-fill text-warning"></i>
+              <span>Algorithmic Decision Latency: <strong class="text-white">12ms</strong></span>
+            </span>
+            <span class="text-emerald fw-semibold">
+              <i class="bi bi-shield-check me-1"></i> 100% Strict FEFO Compliant
+            </span>
+          </div>
+
+          <!-- Sleek Glowing Action Buttons -->
+          <div class="d-flex flex-wrap gap-2 align-items-center">
+            <a href="{{ url_for('main.dashboard') }}" class="btn-console-cta shadow">
+              <i class="bi bi-speedometer2"></i>
+              <span>Open Operations Console</span>
+              <i class="bi bi-arrow-right ms-1"></i>
+            </a>
+            <a href="#features" class="btn-console-secondary">
+              <i class="bi bi-compass me-1"></i>
+              <span>How FEFO Works</span>
+            </a>
+            <a href="{{ url_for('sales.create') }}" class="btn-console-secondary">
+              <i class="bi bi-cart-plus-fill text-warning me-1"></i>
+              <span>POS Billing</span>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Real Medicine Photo in High-End Glassmorphic Frame with Floating Accents -->
+      <div class="col-lg-6 position-relative text-center animate-fade-in-up delay-2">
+        <!-- Floating Accent Badges -->
+        <div class="floating-badge floating-badge-top">
+          <span class="pulse-dot"></span>
+          <span>99.4% Strict FEFO Adherence</span>
+        </div>
+        <div class="floating-badge floating-badge-bottom">
+          <i class="bi bi-graph-up-arrow text-emerald"></i>
+          <span>AI Demand Forecaster Active</span>
+        </div>
+
+        <!-- Medicine Photography Frame -->
+        <div class="position-relative d-inline-block w-100" style="max-width: 560px;">
+          <img src="{{ url_for('static', filename='images/pharmacy_hero.jpg') }}" 
+               alt="Clinical Pharmacy Medicine & Dispensary Management" 
+               class="img-fluid rounded-4 shadow-lg w-100"
+               style="border: 2px solid rgba(255, 255, 255, 0.18); object-fit: cover; max-height: 420px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 35px rgba(16, 185, 129, 0.25) !important;">
+          
+          <!-- Live Telemetry Pill Overlay -->
+          <div class="position-absolute bottom-0 start-0 m-3 p-2 px-3 rounded-pill text-white small" 
+               style="background: rgba(11, 19, 43, 0.88); backdrop-filter: blur(14px); border: 1px solid rgba(255, 255, 255, 0.18);">
+            <span class="pulse-dot me-1"></span>
+            <span class="fw-semibold">Node #1 Central Dispensary &bull; Continuous FEFO Sync</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- The 3 Essential Pillars: Concise, Attractive & High-Value -->
+<section id="features" class="py-5" style="background-color: var(--bg-surface);">
+  <div class="container-fluid px-lg-5 py-4">
+    <div class="text-center mx-auto mb-5" style="max-width: 680px;">
+      <div class="badge bg-success-subtle text-success px-3 py-2 rounded-pill fw-bold mb-2">THREE ESSENTIAL PILLARS</div>
+      <h2 class="display-6 fw-bold text-navy">Why Modern Pharmacies Switch to PharmaAI</h2>
+      <p class="text-muted">A clinical operating system designed to protect your dispensary margins and safeguard patient health.</p>
+    </div>
+
+    <div class="row g-4">
+      <!-- Pillar 1: Automated FEFO Queue -->
+      <div class="col-md-4">
+        <div class="feature-card-modern feature-card-interactive">
+          <div class="feature-icon-wrapper" style="background: var(--emerald-50); color: var(--primary-emerald);">
+            <i class="bi bi-boxes"></i>
+          </div>
+          <h5 class="fw-bold text-navy">1. Automated FEFO Queue</h5>
+          <p class="text-muted small mb-3">
+            Stop searching shelves for expiry dates. At POS checkout, PharmaAI automatically allocates the earliest-expiring batch first, ensuring older stock is sold before it expires while completely locking out expired medicine.
+          </p>
+          <div class="small fw-bold text-emerald">
+            <i class="bi bi-shield-check me-1"></i> Zero negative stock &bull; Full movement audit ledger
+          </div>
+        </div>
+      </div>
+
+      <!-- Pillar 2: 24/7 Expiry Risk Radar -->
+      <div class="col-md-4">
+        <div class="feature-card-modern feature-card-interactive">
+          <div class="feature-icon-wrapper" style="background: var(--alert-bg); color: var(--alert-red);">
+            <i class="bi bi-clock-history"></i>
+          </div>
+          <h5 class="fw-bold text-navy">2. 24/7 Expiry Risk Radar</h5>
+          <p class="text-muted small mb-3">
+            Surveillance radar continuously segments inventory into <strong>Critical (&le;7d)</strong>, <strong>Soon (&le;30d)</strong>, and <strong>Watchlist (&le;90d)</strong>. Take proactive discount measures or execute safe disposal with complete financial audit logging.
+          </p>
+          <div class="small fw-bold text-danger">
+            <i class="bi bi-exclamation-octagon-fill me-1"></i> Live alert badges &bull; Zero expired drug sales
+          </div>
+        </div>
+      </div>
+
+      <!-- Pillar 3: Machine-Learned Demand Forecasting -->
+      <div class="col-md-4">
+        <div class="feature-card-modern feature-card-interactive">
+          <div class="feature-icon-wrapper" style="background: var(--warning-bg); color: var(--warning-amber-dark);">
+            <i class="bi bi-cpu-fill"></i>
+          </div>
+          <h5 class="fw-bold text-navy">3. AI Demand Forecasting</h5>
+          <p class="text-muted small mb-3">
+            A trained Scikit-Learn Random Forest Regressor evaluates historical sales and seasonal cycles without data leakage to predict 7-day and 30-day demand curves, recommending exact reorder pack quantities before stockouts hit.
+          </p>
+          <div class="small fw-bold text-warning">
+            <i class="bi bi-graph-up-arrow me-1"></i> 16.9% accuracy gain over static averages
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Streamlined 3-Step Flow -->
+<section id="how-it-works" class="py-5" style="background-color: var(--bg-canvas);">
+  <div class="container-fluid px-lg-5 py-3">
+    <div class="text-center mx-auto mb-4" style="max-width: 600px;">
+      <h3 class="fw-bold text-navy">From Supplier Intake to Patient POS in 3 Steps</h3>
+      <p class="text-muted small">Everything is coordinated automatically so your staff spends zero time doing manual calculations.</p>
+    </div>
+
+    <div class="row g-3 text-center">
+      <div class="col-md-4">
+        <div class="card-modern feature-card-interactive p-4 h-100">
+          <div class="user-avatar-initials mx-auto mb-3" style="width: 44px; height: 44px; font-size: 1.1rem; background: linear-gradient(135deg, #10b981, #059669);">1</div>
+          <h6 class="fw-bold text-navy mb-1">Receive &amp; Tag Delivery</h6>
+          <p class="text-muted small mb-0">Record delivery batches with expiry dates, quantities, and purchase prices into the chronological queue.</p>
+        </div>
+      </div>
+
+      <div class="col-md-4">
+        <div class="card-modern feature-card-interactive p-4 h-100">
+          <div class="user-avatar-initials mx-auto mb-3" style="width: 44px; height: 44px; font-size: 1.1rem; background: linear-gradient(135deg, #3b82f6, #2563eb);">2</div>
+          <h6 class="fw-bold text-navy mb-1">Dispense with FEFO Priority</h6>
+          <p class="text-muted small mb-0">At POS checkout, the nearest-expiry batch is deducted first, generating thermal patient receipts instantly.</p>
+        </div>
+      </div>
+
+      <div class="col-md-4">
+        <div class="card-modern feature-card-interactive p-4 h-100">
+          <div class="user-avatar-initials mx-auto mb-3" style="width: 44px; height: 44px; font-size: 1.1rem; background: linear-gradient(135deg, #f59e0b, #d97706);">3</div>
+          <h6 class="fw-bold text-navy mb-1">Predictive AI Reorder</h6>
+          <p class="text-muted small mb-0">Lead-time safety formulas calculate exact replenishment orders and sync with suppliers before stockouts occur.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- Interactive FEFO Dispatch Simulator Client-Side Script -->
+<script>
+  const medSimulations = [
+    {
+      name: "Augmentin 625 Duo (Amoxicillin IP)",
+      qty: "10 Strip Units",
+      winnerCode: "BATCH-AUG-2026-01",
+      winnerMeta: "Expires in 18 Days • Auto-allocated to preserve pharmacy margins",
+      heldCode: "BATCH-AUG-2027-09",
+      heldMeta: "Expires in 385 Days • Locked to prevent premature sale of fresh stock"
+    },
+    {
+      name: "Paracetamol 650mg IP (Fast Action)",
+      qty: "50 Tablets",
+      winnerCode: "BATCH-PCM-2026-X4",
+      winnerMeta: "Expires in 12 Days • Critical priority dispatch to avoid expiry write-off",
+      heldCode: "BATCH-PCM-2027-K2",
+      heldMeta: "Expires in 420 Days • Safe vault reserve stock"
+    },
+    {
+      name: "Azithromycin 500mg USP",
+      qty: "15 Blister Packs",
+      winnerCode: "BATCH-AZI-2026-08",
+      winnerMeta: "Expires in 22 Days • Nearest expiry batch matched instantly",
+      heldCode: "BATCH-AZI-2027-V1",
+      heldMeta: "Expires in 510 Days • Locked in central refrigerated storage"
+    }
+  ];
+
+  function switchDemoMed(index, btnElement) {
+    // Update active button
+    const buttons = document.querySelectorAll('#demoSwitcherGroup .med-switch-btn');
+    buttons.forEach(btn => btn.classList.remove('active'));
+    if (btnElement) {
+      btnElement.classList.add('active');
+    }
+
+    const data = medSimulations[index];
+    if (!data) return;
+
+    const medNameEl = document.getElementById('demoMedName');
+    const medQtyEl = document.getElementById('demoMedQty');
+    const winnerCodeEl = document.getElementById('batchWinnerCode');
+    const winnerMetaEl = document.getElementById('batchWinnerMeta');
+    const heldCodeEl = document.getElementById('batchHeldCode');
+    const heldMetaEl = document.getElementById('batchHeldMeta');
+    const winnerCard = document.getElementById('batchWinnerCard');
+
+    if (winnerCard) {
+      winnerCard.style.opacity = '0.4';
+      winnerCard.style.transform = 'scale(0.98)';
+    }
+
+    setTimeout(() => {
+      if (medNameEl) medNameEl.textContent = data.name;
+      if (medQtyEl) medQtyEl.textContent = data.qty;
+      if (winnerCodeEl) winnerCodeEl.textContent = data.winnerCode;
+      if (winnerMetaEl) winnerMetaEl.innerHTML = '<i class="bi bi-hourglass-split me-1"></i> <strong>' + data.winnerMeta.split('•')[0] + '</strong>•' + data.winnerMeta.split('•')[1];
+      if (heldCodeEl) heldCodeEl.textContent = data.heldCode;
+      if (heldMetaEl) heldMetaEl.innerHTML = '<i class="bi bi-shield-check me-1"></i> ' + data.heldMeta;
+
+      if (winnerCard) {
+        winnerCard.style.opacity = '1';
+        winnerCard.style.transform = 'scale(1)';
+      }
+    }, 150);
+  }
+</script>
+{% endblock %}

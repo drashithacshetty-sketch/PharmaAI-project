@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block title %}Sales History & Billing | PharmaAI{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-lg-4 py-4">
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+    <div>
+      <h2 class="fw-bold text-navy mb-1">Sales Transactions & POS History</h2>
+      <p class="text-muted small mb-0">Review completed customer invoices, dispensed FEFO batches, and cashflow.</p>
+    </div>
+    <div>
+      <a href="{{ url_for('sales.create') }}" class="btn btn-emerald d-inline-flex align-items-center gap-2">
+        <i class="bi bi-cart-plus-fill"></i> New POS Billing Sale
+      </a>
+    </div>
+  </div>
+
+  <!-- Search & Filter Controls -->
+  <div class="card-modern p-3 mb-4">
+    <form method="GET" action="{{ url_for('sales.index') }}" class="row g-2 align-items-center">
+      <div class="col-md-6">
+        <div class="input-group">
+          <span class="input-group-text bg-white text-muted"><i class="bi bi-search"></i></span>
+          <input type="text" class="form-control" name="q" value="{{ invoice_query }}" placeholder="Search by invoice number, customer name, or phone...">
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="input-group">
+          <span class="input-group-text bg-white text-muted"><i class="bi bi-calendar3"></i></span>
+          <input type="date" class="form-control" name="date" value="{{ selected_date }}">
+        </div>
+      </div>
+      <div class="col-md-2 d-flex gap-2">
+        <button type="submit" class="btn btn-emerald w-100">Filter</button>
+        {% if invoice_query or selected_date %}
+          <a href="{{ url_for('sales.index') }}" class="btn btn-outline-secondary"><i class="bi bi-x-lg"></i></a>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+
+  <!-- Sales Invoices Table -->
+  <div tabindex="0" role="region" aria-label="Sales Invoices History Table" class="table-wrapper">
+    <table class="table-medismart">
+      <thead>
+        <tr>
+          <th>Invoice Number</th>
+          <th>Date & Time</th>
+          <th>Customer Name</th>
+          <th>Phone</th>
+          <th>Items Count</th>
+          <th>Subtotal</th>
+          <th>Discount</th>
+          <th>Final Amount</th>
+          <th>Payment</th>
+          <th>Cashier</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if sales %}
+          {% for sale in sales %}
+            <tr>
+              <td><code>{{ sale.invoice_number }}</code></td>
+              <td>{{ sale.sale_date.strftime('%Y-%m-%d %H:%M') }}</td>
+              <td class="fw-semibold text-navy">{{ sale.customer_name }}</td>
+              <td><span class="text-muted small">{{ sale.customer_phone or 'Walk-in' }}</span></td>
+              <td><span class="badge bg-light text-dark border">{{ sale.total_items_count }} items</span></td>
+              <td>₹{{ "{:,.2f}".format(sale.total_amount) }}</td>
+              <td>
+                {% if sale.discount_amount > 0 %}
+                  <span class="text-success">-₹{{ "{:,.2f}".format(sale.discount_amount) }}</span>
+                {% else %}
+                  <span class="text-muted">₹0.00</span>
+                {% endif %}
+              </td>
+              <td class="fw-bold text-navy fs-6">₹{{ "{:,.2f}".format(sale.final_amount) }}</td>
+              <td>
+                {% if sale.payment_mode == 'Cash' %}
+                  <span class="badge bg-success-subtle text-success border">Cash</span>
+                {% elif sale.payment_mode == 'UPI' %}
+                  <span class="badge bg-primary-subtle text-primary border">UPI</span>
+                {% else %}
+                  <span class="badge bg-info-subtle text-info border">Card</span>
+                {% endif %}
+              </td>
+              <td><small class="text-muted">{{ sale.cashier.username if sale.cashier else 'System' }}</small></td>
+              <td>
+                <a href="{{ url_for('sales.receipt', id=sale.id) }}" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1 py-1 px-2" style="font-size: 0.8rem;">
+                  <i class="bi bi-printer"></i> Receipt
+                </a>
+              </td>
+            </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="11" class="text-center py-5 text-muted">
+              No sales transactions found. <a href="{{ url_for('sales.create') }}">Create first sale</a>.
+            </td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

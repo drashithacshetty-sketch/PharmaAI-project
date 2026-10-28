@@ -1,0 +1,296 @@
+{% extends "base.html" %}
+
+{% block title %}AI Demand Forecasting | PharmaAI{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-lg-4 py-4">
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+    <div>
+      <h2 class="fw-bold text-navy mb-1">AI Pharmaceutical Demand Forecasting</h2>
+      <p class="text-muted small mb-0">Supervised machine learning using Random Forest with lag features, evaluated against empirical moving averages.</p>
+    </div>
+    <div class="d-flex gap-2">
+      <form method="POST" action="{{ url_for('forecast.retrain') }}" onsubmit="return confirm('Retrain Random Forest model on latest sales data?');">
+        <button type="submit" class="btn btn-outline-emerald btn-sm shadow-sm">
+          <i class="bi bi-arrow-repeat me-1"></i> Retrain ML Model
+        </button>
+      </form>
+      <a href="{{ url_for('reports.export_forecast_csv') }}" class="btn btn-emerald btn-sm">
+        <i class="bi bi-download me-1"></i> Export Forecast CSV
+      </a>
+    </div>
+  </div>
+
+  <!-- Medicine & Horizon Filter Bar -->
+  <div class="card-modern p-3 mb-4">
+    <form method="GET" action="{{ url_for('forecast.index') }}" class="row g-2 align-items-center">
+      <div class="col-md-5">
+        <label class="form-label small fw-semibold text-muted mb-0">Select Target Medicine:</label>
+        <select class="form-select" name="medicine_id" onchange="this.form.submit()">
+          {% for m in medicines %}
+            <option value="{{ m.id }}" {% if selected_med and selected_med.id == m.id %}selected{% endif %}>
+              {{ m.name }} ({{ m.category }} - Stock: {{ m.usable_stock }} {{ m.unit }}s)
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-4">
+        <label class="form-label small fw-semibold text-muted mb-0">Forecast Horizon:</label>
+        <div class="btn-group w-100" role="group">
+          <a href="{{ url_for('forecast.index', medicine_id=selected_med.id if selected_med else 1, horizon=7) }}" class="btn {% if horizon_days == 7 %}btn-emerald{% else %}btn-outline-secondary{% endif %}">
+            7-Day Short-Term
+          </a>
+          <a href="{{ url_for('forecast.index', medicine_id=selected_med.id if selected_med else 1, horizon=30) }}" class="btn {% if horizon_days == 30 %}btn-emerald{% else %}btn-outline-secondary{% endif %}">
+            30-Day Planning Horizon
+          </a>
+        </div>
+      </div>
+
+      <div class="col-md-3">
+        <div class="p-2 border rounded bg-light text-center">
+          <span class="small text-muted d-block">Expected {{ horizon_days }}d Consumption:</span>
+          <span class="fw-bold fs-5 text-emerald">{{ total_predicted_demand }} units</span>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- Model Performance Benchmark Grid -->
+  {% if eval_metrics and eval_metrics.random_forest %}
+    <div class="row g-3 mb-4">
+      <div class="col-md-3 col-sm-6">
+        <div class="kpi-card border-success">
+          <div>
+            <div class="kpi-title text-success">Random Forest MAE</div>
+            <div class="kpi-value text-navy">{{ eval_metrics.random_forest.mae }}</div>
+            <div class="small text-success fw-bold mt-1">
+              <i class="bi bi-arrow-down-short"></i> {{ eval_metrics.improvements.mae_reduction_percent }}% error reduction
+            </div>
+          </div>
+          <div class="kpi-icon-box kpi-icon-emerald"><i class="bi bi-cpu-fill"></i></div>
+        </div>
+      </div>
+
+      <div class="col-md-3 col-sm-6">
+        <div class="kpi-card">
+          <div>
+            <div class="kpi-title">Baseline MAE (7d Avg)</div>
+            <div class="kpi-value text-secondary">{{ eval_metrics.baseline.mae }}</div>
+            <div class="small text-muted mt-1">Simple moving average</div>
+          </div>
+          <div class="kpi-icon-box kpi-icon-navy"><i class="bi bi-bar-chart-line"></i></div>
+        </div>
+      </div>
+
+      <div class="col-md-3 col-sm-6">
+        <div class="kpi-card">
+          <div>
+            <div class="kpi-title">Random Forest RMSE</div>
+            <div class="kpi-value text-navy">{{ eval_metrics.random_forest.rmse }}</div>
+            <div class="small text-success mt-1">vs Baseline: {{ eval_metrics.baseline.rmse }}</div>
+          </div>
+          <div class="kpi-icon-box kpi-icon-emerald"><i class="bi bi-speedometer2"></i></div>
+        </div>
+      </div>
+
+      <div class="col-md-3 col-sm-6">
+        <div class="kpi-card">
+          <div>
+            <div class="kpi-title">Model R² Score</div>
+            <div class="kpi-value text-navy">{{ eval_metrics.random_forest.r2_score }}</div>
+            <div class="small text-muted mt-1">Chronological test split</div>
+          </div>
+          <div class="kpi-icon-box kpi-icon-navy"><i class="bi bi-check-all"></i></div>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+
+  <!-- Main Forecast Chart -->
+  <div class="card-modern mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-graph-up-arrow text-emerald fs-5"></i>
+        <span>Historical Actual Sales vs AI Predicted Consumption Curve ({{ selected_med.name if selected_med else '' }})</span>
+      </div>
+      <div>
+        <span class="badge bg-secondary-subtle text-secondary me-1">Past 30d Actuals</span>
+        <span class="badge bg-success-subtle text-success">Future {{ horizon_days }}d AI Forecast</span>
+      </div>
+    </div>
+    <div class="card-body p-3">
+      <div style="height: 340px; position: relative;">
+        <canvas id="forecastTimelineChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4 mb-4">
+    <!-- Forecast Points Table -->
+    <div class="col-lg-7">
+      <div class="card-modern h-100">
+        <div class="card-header">
+          <span class="fw-bold text-navy"><i class="bi bi-table me-2"></i> Forward Prediction Breakdown ({{ horizon_days }} Days)</span>
+        </div>
+        <div class="card-body p-0">
+          <div tabindex="0" role="region" aria-label="Forecast Schedule Table" class="table-wrapper border-0 rounded-0 shadow-none" style="max-height: 420px;">
+            <table class="table-medismart">
+              <thead>
+                <tr>
+                  <th>Day</th>
+                  <th>Date</th>
+                  <th>Day of Week</th>
+                  <th>AI Predicted Units</th>
+                  <th>Baseline Units</th>
+                  <th>95% Confidence Interval</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for p in forecast_points %}
+                  <tr>
+                    <td><strong>Day +{{ p.step }}</strong></td>
+                    <td><code>{{ p.forecast_date }}</code></td>
+                    <td>{{ p.day_name }}</td>
+                    <td class="fw-bold text-emerald fs-6">{{ p.predicted_units }}</td>
+                    <td class="text-secondary">{{ p.baseline_units }}</td>
+                    <td>
+                      <span class="badge bg-light text-dark border">
+                        [{{ p.confidence_lower }} – {{ p.confidence_upper }}]
+                      </span>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recursive Forecasting Limitations & Feature Importances -->
+    <div class="col-lg-5">
+      <!-- Limitations Card -->
+      <div class="card-modern mb-3 p-3">
+        <h6 class="fw-bold text-navy mb-2"><i class="bi bi-info-circle-fill text-primary me-2"></i> Recursive Forecasting Limitations</h6>
+        <div class="small text-muted lh-base">
+          <p class="mb-2">
+            <strong>Error Compounding:</strong> Predictions at step $T+1$ are fed as lag inputs to step $T+2$. Over 30 days, early forecast inaccuracies compound progressively.
+          </p>
+          <p class="mb-2">
+            <strong>Regression toward Mean:</strong> Extended multi-step horizons tend to smooth out extreme consumption spikes in favour of the historical mean.
+          </p>
+          <p class="mb-0">
+            <strong>Unforeseen Externalities:</strong> Epidemic outbreaks or regulatory shifts cannot be anticipated by historical periodicity alone without clinical telemetry.
+          </p>
+        </div>
+      </div>
+
+      <!-- Feature Importances -->
+      {% if eval_metrics and eval_metrics.feature_importances %}
+        <div class="card-modern p-3">
+          <h6 class="fw-bold text-navy mb-3"><i class="bi bi-bar-chart-steps me-2"></i> Top ML Feature Importances</h6>
+          <div class="d-flex flex-column gap-2 small">
+            {% for feat, imp in eval_metrics.feature_importances.items() %}
+              {% if loop.index <= 6 %}
+                <div>
+                  <div class="d-flex justify-content-between mb-1">
+                    <span class="fw-semibold"><code>{{ feat }}</code></span>
+                    <span class="text-muted">{{ (imp * 100)|round(1) }}%</span>
+                  </div>
+                  <div class="progress" style="height: 6px;">
+                    <div class="progress-bar bg-emerald" style="width: {{ (imp * 100)|round }}%;"></div>
+                  </div>
+                </div>
+              {% endif %}
+            {% endfor %}
+          </div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('forecastTimelineChart').getContext('2d');
+    
+    const labels = {{ chart_timeline_labels|tojson }};
+    const actuals = {{ chart_actual_series|tojson }};
+    const forecast = {{ chart_forecast_series|tojson }};
+    const baseline = {{ chart_baseline_series|tojson }};
+
+    new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: 'Historical Actual Sales',
+            data: actuals,
+            borderColor: '#64748b',
+            backgroundColor: 'rgba(100, 116, 139, 0.1)',
+            borderWidth: 2,
+            tension: 0.2,
+            pointRadius: 3,
+            fill: false
+          },
+          {
+            label: 'AI Predicted Demand (Random Forest)',
+            data: forecast,
+            borderColor: '#168B73',
+            backgroundColor: 'rgba(22, 139, 115, 0.15)',
+            borderWidth: 3,
+            borderDash: [5, 5],
+            tension: 0.3,
+            pointRadius: 4,
+            pointBackgroundColor: '#168B73',
+            fill: true
+          },
+          {
+            label: 'Baseline (Recent 7d Average)',
+            data: baseline,
+            borderColor: '#F4B942',
+            borderWidth: 1.5,
+            borderDash: [2, 2],
+            tension: 0,
+            pointRadius: 0,
+            fill: false
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+          mode: 'index',
+          intersect: false
+        },
+        plugins: {
+          legend: {
+            position: 'top',
+            labels: { boxWidth: 12, padding: 15, font: { weight: 600 } }
+          },
+          tooltip: {
+            backgroundColor: '#16324F',
+            padding: 12
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            title: { display: true, text: 'Daily Units Dispensed' },
+            grid: { color: '#f1f5f9' }
+          },
+          x: {
+            grid: { display: false },
+            ticks: { maxTicksLimit: 15 }
+          }
+        }
+      }
+    });
+  });
+</script>
+{% endblock %}

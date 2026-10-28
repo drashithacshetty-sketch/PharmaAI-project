@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+
+{% block title %}Purchase Order {{ po.po_number }} | PharmaAI{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-lg-4 py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <div class="d-flex align-items-center gap-2">
+        <h2 class="fw-bold text-navy mb-0">Purchase Order: {{ po.po_number }}</h2>
+        {% if po.status == 'Ordered' %}
+          <span class="badge bg-warning text-dark border px-2 py-1"><i class="bi bi-truck"></i> Ordered (Awaiting Delivery)</span>
+        {% elif po.status == 'Received' %}
+          <span class="badge bg-success-subtle text-success border px-2 py-1"><i class="bi bi-check2-all"></i> Received & Stocked</span>
+        {% elif po.status == 'Cancelled' %}
+          <span class="badge bg-danger-subtle text-danger border px-2 py-1">Cancelled</span>
+        {% else %}
+          <span class="badge bg-secondary-subtle text-secondary border px-2 py-1">Draft</span>
+        {% endif %}
+      </div>
+      <p class="text-muted small mb-0">Placed on {{ po.order_date.strftime('%d-%b-%Y %I:%M %p') }} | Supplier: {{ po.supplier.name }}</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('purchase_orders.index') }}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i> Back to Orders
+      </a>
+      {% if po.status in ('Draft', 'Ordered') %}
+        <form method="POST" action="{{ url_for('purchase_orders.cancel', id=po.id) }}" onsubmit="return confirm('Cancel this purchase order?');">
+          <button type="submit" class="btn btn-outline-danger btn-sm">Cancel Order</button>
+        </form>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Order Details Cards -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-3 col-sm-6">
+      <div class="kpi-card">
+        <div>
+          <div class="kpi-title">Vendor</div>
+          <div class="fw-bold text-navy fs-6">{{ po.supplier.name }}</div>
+          <div class="small text-muted">Phone: {{ po.supplier.phone or 'N/A' }}</div>
+        </div>
+        <div class="kpi-icon-box kpi-icon-navy"><i class="bi bi-building"></i></div>
+      </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+      <div class="kpi-card">
+        <div>
+          <div class="kpi-title">Expected Delivery</div>
+          <div class="fw-bold text-navy fs-6">
+            {{ po.expected_delivery_date.strftime('%d-%b-%Y') if po.expected_delivery_date else 'Not set' }}
+          </div>
+          <div class="small text-muted">{{ po.supplier.lead_time_days }} days lead time</div>
+        </div>
+        <div class="kpi-icon-box kpi-icon-amber"><i class="bi bi-calendar-event"></i></div>
+      </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+      <div class="kpi-card">
+        <div>
+          <div class="kpi-title">Total Units</div>
+          <div class="kpi-value text-navy">{{ po.total_ordered_units }}</div>
+          <div class="small text-muted">{{ po.items.count() }} line items</div>
+        </div>
+        <div class="kpi-icon-box kpi-icon-emerald"><i class="bi bi-boxes"></i></div>
+      </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+      <div class="kpi-card">
+        <div>
+          <div class="kpi-title">Total Cost</div>
+          <div class="kpi-value text-emerald">₹{{ "{:,.2f}".format(po.total_amount) }}</div>
+          <div class="small text-muted">Estimated invoice</div>
+        </div>
+        <div class="kpi-icon-box kpi-icon-emerald"><i class="bi bi-currency-rupee"></i></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ordered Line Items -->
+  <div class="card-modern mb-4">
+    <div class="card-header">
+      <span class="fw-bold text-navy"><i class="bi bi-list-check me-2"></i> Ordered Medication Items</span>
+    </div>
+    <div class="card-body p-0">
+      <div tabindex="0" role="region" aria-label="Purchase Order Line Items Table" class="table-wrapper border-0 rounded-0 shadow-none">
+        <table class="table-medismart">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Medicine Description</th>
+              <th>Category</th>
+              <th>Requested Qty</th>
+              <th>Unit Cost</th>
+              <th>Subtotal</th>
+              <th>Received Qty</th>
+              <th>Delivered Batch #</th>
+              <th>Delivered Expiry</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in po.items %}
+              <tr>
+                <td>{{ loop.index }}</td>
+                <td>
+                  <strong class="text-navy">{{ item.medicine.name }}</strong>
+                  <div class="small text-muted">{{ item.medicine.generic_name }} ({{ item.medicine.dosage_form }} {{ item.medicine.strength }})</div>
+                </td>
+                <td><span class="badge bg-light text-dark border">{{ item.medicine.category }}</span></td>
+                <td class="fw-bold">{{ item.requested_quantity }} {{ item.medicine.unit }}s</td>
+                <td>₹{{ "{:,.2f}".format(item.unit_cost) }}</td>
+                <td class="fw-bold">₹{{ "{:,.2f}".format(item.subtotal) }}</td>
+                <td>
+                  {% if item.received_quantity > 0 %}
+                    <span class="text-success fw-bold">{{ item.received_quantity }}</span>
+                  {% else %}
+                    <span class="text-muted">Pending</span>
+                  {% endif %}
+                </td>
+                <td><code>{{ item.batch_number or 'Awaiting' }}</code></td>
+                <td>{{ item.expiry_date.strftime('%Y-%m-%d') if item.expiry_date else 'Awaiting' }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Receive Delivery Section (if Ordered) -->
+  {% if po.status == 'Ordered' %}
+    <div class="card-modern border-success p-4">
+      <div class="d-flex align-items-center gap-2 mb-3">
+        <div class="brand-icon-wrapper" style="background: var(--success-green);">
+          <i class="bi bi-box-seam-fill"></i>
+        </div>
+        <div>
+          <h5 class="fw-bold text-navy mb-0">Record Physical Delivery & Receive Stock</h5>
+          <p class="text-muted small mb-0">Submit delivered lot numbers and expiry dates to auto-create inventory batches and log stock movements.</p>
+        </div>
+      </div>
+
+      <form method="POST" action="{{ url_for('purchase_orders.receive', id=po.id) }}">
+        <div class="row g-3 mb-4">
+          {% for item in po.items %}
+            <div class="col-12 p-3 bg-light rounded border">
+              <div class="row g-3 align-items-center">
+                <div class="col-md-3">
+                  <div class="fw-bold text-navy">{{ item.medicine.name }}</div>
+                  <div class="small text-muted">Ordered: {{ item.requested_quantity }} {{ item.medicine.unit }}s</div>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label small fw-semibold">Delivered Quantity *</label>
+                  <input type="number" class="form-control form-control-sm" name="received_qty_{{ item.id }}" value="{{ item.requested_quantity }}" min="1" required>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label small fw-semibold">Lot / Batch Number *</label>
+                  <input type="text" class="form-control form-control-sm text-uppercase" name="batch_number_{{ item.id }}" placeholder="e.g. BATCH-2026-X1" required>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label small fw-semibold">Manufacturer Expiry Date *</label>
+                  <input type="date" class="form-control form-control-sm" name="expiry_date_{{ item.id }}" required>
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+
+        <div class="d-flex justify-content-end">
+          <button type="submit" class="btn btn-emerald px-4 py-2" onclick="return confirm('Confirm delivery receipt? Batches will be created and added to usable stock.');">
+            <i class="bi bi-check-circle-fill me-1"></i> Confirm Delivery & Intake to Stock
+          </button>
+        </div>
+      </form>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

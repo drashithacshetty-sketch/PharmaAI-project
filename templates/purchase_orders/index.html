@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block title %}Purchase Orders | PharmaAI{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-lg-4 py-4">
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+    <div>
+      <h2 class="fw-bold text-navy mb-1">Procurement & Purchase Orders</h2>
+      <p class="text-muted small mb-0">Track vendor orders generated manually or auto-recommended by the Smart Reorder engine.</p>
+    </div>
+    <div>
+      <a href="{{ url_for('purchase_orders.create') }}" class="btn btn-emerald d-inline-flex align-items-center gap-2">
+        <i class="bi bi-cart-plus"></i> Create Purchase Order
+      </a>
+    </div>
+  </div>
+
+  <!-- Status Filter Tabs -->
+  <div class="card-modern p-3 mb-4">
+    <div class="d-flex flex-wrap gap-2">
+      <a href="{{ url_for('purchase_orders.index') }}" class="btn btn-sm {% if not selected_status %}btn-emerald{% else %}btn-outline-secondary{% endif %}">
+        All Orders
+      </a>
+      <a href="{{ url_for('purchase_orders.index', status='Ordered') }}" class="btn btn-sm {% if selected_status == 'Ordered' %}btn-emerald{% else %}btn-outline-secondary{% endif %}">
+        Pending Delivery (Ordered)
+      </a>
+      <a href="{{ url_for('purchase_orders.index', status='Received') }}" class="btn btn-sm {% if selected_status == 'Received' %}btn-emerald{% else %}btn-outline-secondary{% endif %}">
+        Received & Stocked
+      </a>
+      <a href="{{ url_for('purchase_orders.index', status='Draft') }}" class="btn btn-sm {% if selected_status == 'Draft' %}btn-emerald{% else %}btn-outline-secondary{% endif %}">
+        Drafts
+      </a>
+      <a href="{{ url_for('purchase_orders.index', status='Cancelled') }}" class="btn btn-sm {% if selected_status == 'Cancelled' %}btn-emerald{% else %}btn-outline-secondary{% endif %}">
+        Cancelled
+      </a>
+    </div>
+  </div>
+
+  <!-- PO Table -->
+  <div tabindex="0" role="region" aria-label="Purchase Orders Table" class="table-wrapper">
+    <table class="table-medismart">
+      <thead>
+        <tr>
+          <th>PO Number</th>
+          <th>Order Date</th>
+          <th>Supplier</th>
+          <th>Expected Delivery</th>
+          <th>Items Ordered</th>
+          <th>Order Total</th>
+          <th>Status</th>
+          <th>Created By</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if orders %}
+          {% for po in orders %}
+            <tr>
+              <td><code>{{ po.po_number }}</code></td>
+              <td>{{ po.order_date.strftime('%Y-%m-%d') }}</td>
+              <td>
+                <strong class="text-navy">{{ po.supplier.name }}</strong>
+                <div class="small text-muted">{{ po.supplier.lead_time_days }}d standard lead time</div>
+              </td>
+              <td>
+                {% if po.expected_delivery_date %}
+                  {{ po.expected_delivery_date.strftime('%Y-%m-%d') }}
+                {% else %}
+                  <span class="text-muted">Not specified</span>
+                {% endif %}
+              </td>
+              <td>
+                <span class="fw-bold">{{ po.total_ordered_units }} units</span>
+                <div class="small text-muted">across {{ po.items.count() }} medicines</div>
+              </td>
+              <td class="fw-bold text-navy fs-6">₹{{ "{:,.2f}".format(po.total_amount) }}</td>
+              <td>
+                {% if po.status == 'Ordered' %}
+                  <span class="badge bg-warning text-dark border"><i class="bi bi-clock"></i> In Transit</span>
+                {% elif po.status == 'Received' %}
+                  <span class="badge bg-success-subtle text-success border"><i class="bi bi-check2-all"></i> Received</span>
+                {% elif po.status == 'Cancelled' %}
+                  <span class="badge bg-danger-subtle text-danger border">Cancelled</span>
+                {% else %}
+                  <span class="badge bg-secondary-subtle text-secondary border">Draft</span>
+                {% endif %}
+              </td>
+              <td><small class="text-muted">{{ po.created_by_user.username if po.created_by_user else 'System' }}</small></td>
+              <td>
+                <a href="{{ url_for('purchase_orders.view', id=po.id) }}" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1 py-1 px-2" style="font-size: 0.8rem;">
+                  <i class="bi bi-eye"></i> View / Receive
+                </a>
+              </td>
+            </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="9" class="text-center py-5 text-muted">
+              No purchase orders found. <a href="{{ url_for('purchase_orders.create') }}">Create a purchase order</a>.
+            </td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

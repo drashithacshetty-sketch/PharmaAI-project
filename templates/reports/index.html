@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}Reports & CSV Exports | PharmaAI{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-lg-4 py-4">
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+    <div>
+      <h2 class="fw-bold text-navy mb-1">Analytical Reports & Audit Exports</h2>
+      <p class="text-muted small mb-0">Generate, filter, and download spreadsheet CSV records for inventory valuation, sales audits, and machine learning forecasts.</p>
+    </div>
+    <span class="badge bg-light text-secondary border px-3 py-2">
+      <i class="bi bi-clock me-1"></i> Data as of {{ today_date }}
+    </span>
+  </div>
+
+  <div class="row g-4">
+    <!-- Report 1: Inventory Valuation -->
+    <div class="col-lg-6">
+      <div class="card-modern p-4 h-100 d-flex flex-column justify-content-between">
+        <div>
+          <div class="d-flex align-items-center gap-3 mb-3">
+            <div class="brand-icon-wrapper" style="width: 46px; height: 46px; font-size: 1.4rem;">
+              <i class="bi bi-boxes"></i>
+            </div>
+            <div>
+              <h5 class="fw-bold text-navy mb-0">Inventory Valuation & Batch Report</h5>
+              <span class="small text-muted">{{ total_medicines }} catalog items | {{ total_batches }} active batches</span>
+            </div>
+          </div>
+          <p class="text-muted small lh-base">
+            Detailed breakdown of every medicine and batch lot number, purchase costs, retail selling rates, remaining quantities, financial inventory valuation, and preferred vendor details.
+          </p>
+        </div>
+        <div class="pt-3 border-top mt-3">
+          <a href="{{ url_for('reports.export_inventory_csv') }}" class="btn btn-emerald w-100 d-flex align-items-center justify-content-center gap-2">
+            <i class="bi bi-download"></i> Download Full Inventory CSV
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Report 2: Sales Transactions -->
+    <div class="col-lg-6">
+      <div class="card-modern p-4 h-100 d-flex flex-column justify-content-between">
+        <div>
+          <div class="d-flex align-items-center gap-3 mb-3">
+            <div class="brand-icon-wrapper" style="background: #e6edf5; color: var(--dark-navy); width: 46px; height: 46px; font-size: 1.4rem;">
+              <i class="bi bi-receipt"></i>
+            </div>
+            <div>
+              <h5 class="fw-bold text-navy mb-0">Sales Transactions & Revenue Report</h5>
+              <span class="small text-muted">{{ total_sales_count }} completed invoices logged</span>
+            </div>
+          </div>
+          <p class="text-muted small lh-base">
+            Complete transaction ledger with invoice numbers, customer information, dispensed FEFO batches, item quantities, discounts, tax amounts, and cashier attribution.
+          </p>
+
+          <!-- Date Filter for Sales CSV -->
+          <form method="GET" action="{{ url_for('reports.export_sales_csv') }}" class="row g-2 mb-2">
+            <div class="col-sm-6">
+              <label class="form-label small text-muted mb-0">Start Date:</label>
+              <input type="date" class="form-control form-control-sm" name="start_date">
+            </div>
+            <div class="col-sm-6">
+              <label class="form-label small text-muted mb-0">End Date:</label>
+              <input type="date" class="form-control form-control-sm" name="end_date">
+            </div>
+            <div class="col-12 mt-2">
+              <button type="submit" class="btn btn-outline-emerald btn-sm w-100">
+                <i class="bi bi-funnel me-1"></i> Download Filtered Sales CSV
+              </button>
+            </div>
+          </form>
+        </div>
+        <div class="pt-2 border-top mt-2">
+          <a href="{{ url_for('reports.export_sales_csv') }}" class="btn btn-navy w-100 d-flex align-items-center justify-content-center gap-2">
+            <i class="bi bi-download"></i> Download All-Time Sales CSV
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Report 3: Expiry Risk -->
+    <div class="col-lg-6">
+      <div class="card-modern p-4 h-100 d-flex flex-column justify-content-between">
+        <div>
+          <div class="d-flex align-items-center gap-3 mb-3">
+            <div class="brand-icon-wrapper" style="background: var(--alert-bg); color: var(--alert-red); width: 46px; height: 46px; font-size: 1.4rem;">
+              <i class="bi bi-clock-history"></i>
+            </div>
+            <div>
+              <h5 class="fw-bold text-navy mb-0">Expiry Risk & Financial Exposure Report</h5>
+              <span class="small text-muted">Watchlist & safe disposal audit</span>
+            </div>
+          </div>
+          <p class="text-muted small lh-base">
+            Comprehensive audit report of all expired, critical (&le;7d), soon (&le;30d), and watchlist (&le;90d) batches with capital at risk, expiration dates, and lot identifiers.
+          </p>
+        </div>
+        <div class="pt-3 border-top mt-3">
+          <a href="{{ url_for('reports.export_expiry_csv') }}" class="btn btn-outline-danger w-100 d-flex align-items-center justify-content-center gap-2">
+            <i class="bi bi-download"></i> Download Expiry Risk Audit CSV
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Report 4: Forecast Benchmarks -->
+    <div class="col-lg-6">
+      <div class="card-modern p-4 h-100 d-flex flex-column justify-content-between">
+        <div>
+          <div class="d-flex align-items-center gap-3 mb-3">
+            <div class="brand-icon-wrapper" style="background: var(--pale-mint); color: var(--primary-emerald); width: 46px; height: 46px; font-size: 1.4rem;">
+              <i class="bi bi-cpu-fill"></i>
+            </div>
+            <div>
+              <h5 class="fw-bold text-navy mb-0">AI Demand Forecast & Baseline Report</h5>
+              <span class="small text-muted">{{ total_forecasts_count }} forecast points persisted</span>
+            </div>
+          </div>
+          <p class="text-muted small lh-base">
+            Supervised machine learning predictions across 7-day and 30-day forward horizons, compared against empirical moving averages with MAE, RMSE, and 95% confidence bounds.
+          </p>
+        </div>
+        <div class="pt-3 border-top mt-3">
+          <a href="{{ url_for('reports.export_forecast_csv') }}" class="btn btn-outline-emerald w-100 d-flex align-items-center justify-content-center gap-2">
+            <i class="bi bi-download"></i> Download AI Demand Forecast CSV
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

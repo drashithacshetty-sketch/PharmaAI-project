@@ -1,0 +1,288 @@
+{% extends "base.html" %}
+
+{% block title %}Expiry Risk Alerts | PharmaAI{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-lg-4 py-4">
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+    <div>
+      <h2 class="fw-bold text-navy mb-1">Pharmaceutical Expiry Alert Hub</h2>
+      <p class="text-muted small mb-0">Multi-tiered shelf-life watchdog preventing dispense of compromised drugs and minimizing financial write-offs.</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('reports.export_expiry_csv') }}" class="btn btn-outline-emerald btn-sm d-inline-flex align-items-center gap-1">
+        <i class="bi bi-download"></i> Export Expiry CSV
+      </a>
+      <a href="{{ url_for('batches.index') }}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-boxes"></i> All Batches
+      </a>
+    </div>
+  </div>
+
+  <!-- Financial Exposure & Count Cards -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-3 col-sm-6">
+      <div class="kpi-card border-danger">
+        <div>
+          <div class="kpi-title text-danger">Expired Stock (Loss)</div>
+          <div class="kpi-value text-danger">{{ buckets.counts.expired }} <small class="fs-6">batches</small></div>
+          <div class="small text-danger fw-bold mt-1">₹{{ "{:,.2f}".format(buckets.financial_risk.expired_loss) }} wasted</div>
+        </div>
+        <div class="kpi-icon-box kpi-icon-red"><i class="bi bi-x-octagon-fill"></i></div>
+      </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+      <div class="kpi-card border-danger-subtle">
+        <div>
+          <div class="kpi-title text-danger">Critical (&le; {{ critical_days }}d)</div>
+          <div class="kpi-value text-danger">{{ buckets.counts.critical }} <small class="fs-6">batches</small></div>
+          <div class="small text-muted mt-1">₹{{ "{:,.2f}".format(buckets.financial_risk.critical_value) }} at risk</div>
+        </div>
+        <div class="kpi-icon-box kpi-icon-red"><i class="bi bi-alarm-fill"></i></div>
+      </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+      <div class="kpi-card border-warning-subtle">
+        <div>
+          <div class="kpi-title text-warning">Expiring Soon (&le; {{ soon_days }}d)</div>
+          <div class="kpi-value text-warning">{{ buckets.counts.soon }} <small class="fs-6">batches</small></div>
+          <div class="small text-muted mt-1">₹{{ "{:,.2f}".format(buckets.financial_risk.soon_value) }} value</div>
+        </div>
+        <div class="kpi-icon-box kpi-icon-amber"><i class="bi bi-hourglass-split"></i></div>
+      </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+      <div class="kpi-card">
+        <div>
+          <div class="kpi-title">Watchlist (&le; {{ watch_days }}d)</div>
+          <div class="kpi-value text-navy">{{ buckets.counts.watch }} <small class="fs-6">batches</small></div>
+          <div class="small text-success mt-1"><i class="bi bi-shield-check"></i> Monitored actively</div>
+        </div>
+        <div class="kpi-icon-box kpi-icon-navy"><i class="bi bi-binoculars"></i></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Configurable Thresholds Bar -->
+  <div class="card-modern p-3 mb-4">
+    <form method="GET" action="{{ url_for('expiry.index') }}" class="row g-2 align-items-center">
+      <div class="col-md-3">
+        <label class="form-label small fw-semibold text-muted mb-0">Critical Threshold (Days):</label>
+        <input type="number" class="form-control form-control-sm" name="critical_days" value="{{ critical_days }}" min="1" max="30">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small fw-semibold text-muted mb-0">Expiring Soon Window (Days):</label>
+        <input type="number" class="form-control form-control-sm" name="soon_days" value="{{ soon_days }}" min="15" max="60">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small fw-semibold text-muted mb-0">Watchlist Window (Days):</label>
+        <input type="number" class="form-control form-control-sm" name="watch_days" value="{{ watch_days }}" min="60" max="180">
+      </div>
+      <div class="col-md-3 d-flex align-items-end gap-2">
+        <button type="submit" class="btn btn-emerald btn-sm w-100">Apply Thresholds</button>
+        <a href="{{ url_for('expiry.index') }}" class="btn btn-outline-secondary btn-sm" title="Reset Defaults"><i class="bi bi-arrow-counterclockwise"></i></a>
+      </div>
+    </form>
+  </div>
+
+  <!-- Expiry Risk Tables Tabs -->
+  <div class="card-modern">
+    <div class="card-header p-0 border-bottom-0">
+      <ul class="nav nav-tabs px-3 pt-2" id="expiryTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+          <button class="nav-link active text-danger fw-bold" id="expired-tab" data-bs-toggle="tab" data-bs-target="#expired" type="button" role="tab">
+            <i class="bi bi-x-circle-fill me-1"></i> Expired Stock ({{ buckets.counts.expired }})
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link text-danger fw-bold" id="critical-tab" data-bs-toggle="tab" data-bs-target="#critical" type="button" role="tab">
+            <i class="bi bi-exclamation-triangle-fill me-1"></i> Critical &le; {{ critical_days }}d ({{ buckets.counts.critical }})
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link text-warning fw-bold" id="soon-tab" data-bs-toggle="tab" data-bs-target="#soon" type="button" role="tab">
+            <i class="bi bi-hourglass-top me-1"></i> Soon &le; {{ soon_days }}d ({{ buckets.counts.soon }})
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link text-navy fw-bold" id="watch-tab" data-bs-toggle="tab" data-bs-target="#watch" type="button" role="tab">
+            <i class="bi bi-eye-fill me-1"></i> Watchlist &le; {{ watch_days }}d ({{ buckets.counts.watch }})
+          </button>
+        </li>
+      </ul>
+    </div>
+
+    <div class="card-body p-0">
+      <div class="tab-content" id="expiryTabContent">
+        <!-- Expired Tab -->
+        <div class="tab-pane fade show active" id="expired" role="tabpanel">
+          {% if buckets.expired %}
+            <div class="p-3 bg-danger-subtle text-danger border-bottom small">
+              <strong>CRITICAL SAFETY ALERT:</strong> The following batches are past their expiration date. PharmaAI strictly blocks these items from POS checkout. Discard them to clean inventory records.
+            </div>
+            <div tabindex="0" role="region" aria-label="Expired Batches Table" class="table-wrapper border-0 rounded-0 shadow-none">
+              <table class="table-medismart">
+                <thead>
+                  <tr>
+                    <th>Medicine</th>
+                    <th>Batch #</th>
+                    <th>Expired Date</th>
+                    <th>Days Expired</th>
+                    <th>Current Qty</th>
+                    <th>Purchase Cost</th>
+                    <th>Financial Loss</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for b in buckets.expired %}
+                    <tr class="table-danger">
+                      <td>
+                        <strong>{{ b.medicine.name }}</strong>
+                        <div class="small text-muted">{{ b.medicine.generic_name }}</div>
+                      </td>
+                      <td><code>{{ b.batch_number }}</code></td>
+                      <td>{{ b.expiry_date.strftime('%Y-%m-%d') }}</td>
+                      <td class="text-danger fw-bold">{{ b.days_until_expiry|abs }} days ago</td>
+                      <td class="fw-bold">{{ b.current_quantity }} units</td>
+                      <td>₹{{ "{:,.2f}".format(b.purchase_price) }}</td>
+                      <td class="fw-bold text-danger">₹{{ "{:,.2f}".format(b.current_quantity * b.purchase_price) }}</td>
+                      <td>
+                        <form method="POST" action="{{ url_for('batches.discard', id=b.id) }}" onsubmit="return confirm('Confirm safe disposal and removal of this expired batch?');">
+                          <button type="submit" class="btn btn-sm btn-danger py-1 px-2">
+                            <i class="bi bi-trash"></i> Discard Batch
+                          </button>
+                        </form>
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <div class="text-center py-5 text-muted">
+              <i class="bi bi-check-circle-fill text-success fs-1 mb-2 d-block"></i>
+              Great job! Zero expired stock currently in the pharmacy inventory.
+            </div>
+          {% endif %}
+        </div>
+
+        <!-- Critical Tab (<= 7 days) -->
+        <div class="tab-pane fade" id="critical" role="tabpanel">
+          {% if buckets.critical %}
+            <div tabindex="0" role="region" aria-label="Critical Batches Table" class="table-wrapper border-0 rounded-0 shadow-none">
+              <table class="table-medismart">
+                <thead>
+                  <tr>
+                    <th>Medicine</th>
+                    <th>Batch #</th>
+                    <th>Expiry Date</th>
+                    <th>Days Remaining</th>
+                    <th>Current Stock</th>
+                    <th>Dispense Priority</th>
+                    <th>Supplier</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for b in buckets.critical %}
+                    <tr>
+                      <td>
+                        <strong>{{ b.medicine.name }}</strong>
+                        <div class="small text-muted">{{ b.medicine.generic_name }}</div>
+                      </td>
+                      <td><code>{{ b.batch_number }}</code></td>
+                      <td>{{ b.expiry_date.strftime('%Y-%m-%d') }}</td>
+                      <td class="text-danger fw-bold"><i class="bi bi-alarm"></i> {{ b.days_until_expiry }} days left</td>
+                      <td class="fw-bold">{{ b.current_quantity }} units</td>
+                      <td><span class="badge bg-danger">Top FEFO Priority</span></td>
+                      <td>{{ b.medicine.preferred_supplier.name if b.medicine.preferred_supplier else 'N/A' }}</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <div class="text-center py-5 text-muted">No batches expiring within {{ critical_days }} days.</div>
+          {% endif %}
+        </div>
+
+        <!-- Soon Tab (<= 30 days) -->
+        <div class="tab-pane fade" id="soon" role="tabpanel">
+          {% if buckets.soon %}
+            <div tabindex="0" role="region" aria-label="Soon Expiring Batches Table" class="table-wrapper border-0 rounded-0 shadow-none">
+              <table class="table-medismart">
+                <thead>
+                  <tr>
+                    <th>Medicine</th>
+                    <th>Batch #</th>
+                    <th>Expiry Date</th>
+                    <th>Days Remaining</th>
+                    <th>Current Stock</th>
+                    <th>At-Risk Valuation</th>
+                    <th>Supplier</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for b in buckets.soon %}
+                    <tr>
+                      <td>
+                        <strong>{{ b.medicine.name }}</strong>
+                        <div class="small text-muted">{{ b.medicine.generic_name }}</div>
+                      </td>
+                      <td><code>{{ b.batch_number }}</code></td>
+                      <td>{{ b.expiry_date.strftime('%Y-%m-%d') }}</td>
+                      <td class="text-warning fw-bold">{{ b.days_until_expiry }} days left</td>
+                      <td class="fw-bold">{{ b.current_quantity }} units</td>
+                      <td>₹{{ "{:,.2f}".format(b.current_quantity * b.purchase_price) }}</td>
+                      <td>{{ b.medicine.preferred_supplier.name if b.medicine.preferred_supplier else 'N/A' }}</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <div class="text-center py-5 text-muted">No batches expiring within {{ soon_days }} days.</div>
+          {% endif %}
+        </div>
+
+        <!-- Watchlist Tab (<= 90 days) -->
+        <div class="tab-pane fade" id="watch" role="tabpanel">
+          {% if buckets.watch %}
+            <div tabindex="0" role="region" aria-label="Watchlist Batches Table" class="table-wrapper border-0 rounded-0 shadow-none">
+              <table class="table-medismart">
+                <thead>
+                  <tr>
+                    <th>Medicine</th>
+                    <th>Batch #</th>
+                    <th>Expiry Date</th>
+                    <th>Days Remaining</th>
+                    <th>Current Stock</th>
+                    <th>Supplier</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for b in buckets.watch %}
+                    <tr>
+                      <td>
+                        <strong>{{ b.medicine.name }}</strong>
+                        <div class="small text-muted">{{ b.medicine.generic_name }}</div>
+                      </td>
+                      <td><code>{{ b.batch_number }}</code></td>
+                      <td>{{ b.expiry_date.strftime('%Y-%m-%d') }}</td>
+                      <td class="text-primary">{{ b.days_until_expiry }} days</td>
+                      <td class="fw-bold">{{ b.current_quantity }} units</td>
+                      <td>{{ b.medicine.preferred_supplier.name if b.medicine.preferred_supplier else 'N/A' }}</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <div class="text-center py-5 text-muted">No batches in the {{ watch_days }}-day watchlist.</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

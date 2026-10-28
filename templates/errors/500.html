@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}System Error (500) | PharmaAI{% endblock %}
+
+{% block content %}
+<div class="container py-5 text-center">
+  <div class="row justify-content-center">
+    <div class="col-md-6">
+      <div class="card-modern p-5 my-4">
+        <div class="display-1 fw-bold text-danger mb-2">500</div>
+        <div class="brand-icon-wrapper mx-auto mb-3" style="width: 50px; height: 50px; font-size: 1.5rem; background: var(--alert-bg); color: var(--alert-red);">
+          <i class="bi bi-shield-x"></i>
+        </div>
+        <h4 class="fw-bold text-navy mb-2">Internal Pharmacy Server Error</h4>
+        <p class="text-muted small mb-4">
+          An unexpected system exception occurred while processing the inventory transaction or forecasting pipeline. Please try again or return to safety.
+        </p>
+        <div class="d-flex justify-content-center gap-2">
+          <a href="{{ url_for('main.dashboard') }}" class="btn btn-emerald">
+            <i class="bi bi-arrow-clockwise me-1"></i> Return to Dashboard
+          </a>
+          <a href="{{ url_for('main.index') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-house me-1"></i> Home
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

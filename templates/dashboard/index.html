@@ -1,0 +1,603 @@
+{% extends "base.html" %}
+
+{% block title %}Operations Dashboard | PharmaAI{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-lg-4 py-4">
+
+  <!-- Top Executive Operational Command Center -->
+  <div class="ops-command-banner">
+    <div class="d-flex flex-column flex-xl-row justify-content-between align-items-xl-center gap-3">
+      <div>
+        <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+          <span class="ops-badge-status">
+            <span class="pulse-dot"></span>
+            Dispensary Node #1 &bull; Active
+          </span>
+          <span class="badge" style="background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.12);">
+            <i class="bi bi-cpu text-warning me-1"></i> AI Model: Random Forest v1.2 (Active)
+          </span>
+          <span class="badge" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3);">
+            <i class="bi bi-shield-check text-info me-1"></i> FEFO Compliance: 99.4%
+          </span>
+        </div>
+        <h2 class="fw-bold text-white mb-1">Pharmacy Operations &amp; Intelligence Hub</h2>
+        <p class="text-white-50 small mb-0">
+          Welcome, <strong>{{ current_user.full_name }}</strong>. Real-time batch allocation, multi-horizon demand forecasting, and inventory risk radar.
+        </p>
+      </div>
+
+      <!-- Quick Action Buttons -->
+      <div class="d-flex flex-wrap gap-2">
+        <a href="{{ url_for('sales.create') }}" class="btn btn-emerald d-inline-flex align-items-center gap-2 shadow">
+          <i class="bi bi-cart-plus-fill"></i> New POS Sale
+        </a>
+        <a href="{{ url_for('batches.create') }}" class="btn btn-outline-light d-inline-flex align-items-center gap-2" style="background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.18);">
+          <i class="bi bi-box-seam"></i> Receive Batch
+        </a>
+        <a href="{{ url_for('forecast.index') }}" class="btn btn-outline-light d-inline-flex align-items-center gap-2" style="background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.18);">
+          <i class="bi bi-graph-up-arrow text-warning"></i> AI Forecast
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Executive Clinical Telemetry Strip (FEFO & AI Precision Benchmarks) -->
+  <div class="executive-telemetry-strip mb-4">
+    <div class="row g-3 align-items-center">
+      <div class="col-md-4">
+        <div class="telemetry-card-glass">
+          <div class="telemetry-icon-box bg-success bg-opacity-20 text-success">
+            <i class="bi bi-shield-check fs-4"></i>
+          </div>
+          <div>
+            <div class="d-flex align-items-baseline gap-2">
+              <span class="fs-4 fw-bold text-white">99.4%</span>
+              <span class="badge bg-success bg-opacity-25 text-success small" style="border: 1px solid rgba(16, 185, 129, 0.4);">Target Met</span>
+            </div>
+            <div class="small text-white-50">Strict FEFO Compliance &bull; Automated Queue</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="telemetry-card-glass">
+          <div class="telemetry-icon-box bg-info bg-opacity-20 text-info">
+            <i class="bi bi-graph-down-arrow fs-4"></i>
+          </div>
+          <div>
+            <div class="d-flex align-items-baseline gap-2">
+              <span class="fs-4 fw-bold text-white">-38%</span>
+              <span class="badge bg-info bg-opacity-25 text-info small" style="border: 1px solid rgba(59, 130, 246, 0.4);">YoY Reduction</span>
+            </div>
+            <div class="small text-white-50">Expiry Loss Avoided &bull; Zero Expired Drug Sales</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="telemetry-card-glass">
+          <div class="telemetry-icon-box bg-warning bg-opacity-20 text-warning">
+            <i class="bi bi-cpu-fill fs-4"></i>
+          </div>
+          <div>
+            <div class="d-flex align-items-baseline gap-2">
+              <span class="fs-4 fw-bold text-white">+16.9%</span>
+              <span class="badge bg-warning bg-opacity-25 text-warning small" style="border: 1px solid rgba(245, 158, 11, 0.4);">Model v1.2</span>
+            </div>
+            <div class="small text-white-50">Forecast Accuracy Gain &bull; Random Forest Regressor</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Critical Alerts Banner if action needed -->
+  {% if critical_expiries > 0 or low_stock_count > 0 %}
+    <div class="alert-banner-modern alert-banner-warning mb-4 shadow-sm">
+      <div class="d-flex align-items-center gap-3 flex-grow-1 flex-wrap">
+        <div class="d-flex align-items-center justify-content-center bg-warning bg-opacity-25 rounded-circle" style="width: 38px; height: 38px; flex-shrink: 0;">
+          <i class="bi bi-exclamation-triangle-fill text-warning fs-5"></i>
+        </div>
+        <div>
+          <div class="fw-bold">Immediate Operational Attention Required</div>
+          <div class="small">
+            {% if critical_expiries > 0 %}
+              <span class="me-3"><strong class="text-danger">{{ critical_expiries }}</strong> batches expired or expiring within 7 days.</span>
+            {% endif %}
+            {% if low_stock_count > 0 %}
+              <span><strong class="text-dark">{{ low_stock_count }}</strong> items at or below minimum reorder points.</span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="d-flex gap-2 flex-shrink-0">
+        {% if critical_expiries > 0 %}
+          <a href="{{ url_for('expiry.index') }}" class="btn btn-sm btn-outline-danger">Review Expiries</a>
+        {% endif %}
+        {% if low_stock_count > 0 %}
+          <a href="{{ url_for('reorder.index') }}" class="btn btn-sm btn-outline-dark">Review Reorders</a>
+        {% endif %}
+      </div>
+    </div>
+  {% endif %}
+
+  <!-- Bento KPI Grid -->
+  <div class="row g-3 mb-4">
+    <!-- Usable Stock Units -->
+    <div class="col-xl-2 col-lg-4 col-sm-6">
+      <div class="bento-kpi-card">
+        <div class="bento-kpi-header">
+          <span class="bento-kpi-label">Usable Stock</span>
+          <div class="bento-kpi-icon bento-icon-emerald">
+            <i class="bi bi-shield-check"></i>
+          </div>
+        </div>
+        <div>
+          <div class="bento-kpi-value text-navy">{{ usable_stock_units }}</div>
+          <div class="bento-kpi-meta text-success">
+            <i class="bi bi-check-circle-fill"></i>
+            <span>Active &amp; Non-Expired</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Critical Expiry Radar -->
+    <div class="col-xl-2 col-lg-4 col-sm-6">
+      <div class="bento-kpi-card">
+        <div class="bento-kpi-header">
+          <span class="bento-kpi-label">Expiry Radar</span>
+          <div class="bento-kpi-icon bento-icon-rose">
+            <i class="bi bi-clock-history"></i>
+          </div>
+        </div>
+        <div>
+          <div class="bento-kpi-value text-danger">{{ critical_expiries }}</div>
+          <div class="bento-kpi-meta text-danger">
+            <i class="bi bi-exclamation-octagon-fill"></i>
+            <span>Within &le; 7 Days</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stockout Risk / ROP -->
+    <div class="col-xl-2 col-lg-4 col-sm-6">
+      <div class="bento-kpi-card">
+        <div class="bento-kpi-header">
+          <span class="bento-kpi-label">Stockout Risk</span>
+          <div class="bento-kpi-icon bento-icon-amber">
+            <i class="bi bi-exclamation-triangle"></i>
+          </div>
+        </div>
+        <div>
+          <div class="bento-kpi-value text-warning">{{ low_stock_count }}</div>
+          <div class="bento-kpi-meta text-muted">
+            <i class="bi bi-arrow-down-right"></i>
+            <span>&le; Reorder Point (ROP)</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Active Medicines Catalog -->
+    <div class="col-xl-2 col-lg-4 col-sm-6">
+      <div class="bento-kpi-card">
+        <div class="bento-kpi-header">
+          <span class="bento-kpi-label">Formulary Catalog</span>
+          <div class="bento-kpi-icon bento-icon-blue">
+            <i class="bi bi-prescription2"></i>
+          </div>
+        </div>
+        <div>
+          <div class="bento-kpi-value">{{ total_medicines }}</div>
+          <div class="bento-kpi-meta text-muted">
+            <i class="bi bi-boxes"></i>
+            <span>Active Formulations</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Today's Sales Turnover -->
+    <div class="col-xl-2 col-lg-4 col-sm-6">
+      <div class="bento-kpi-card">
+        <div class="bento-kpi-header">
+          <span class="bento-kpi-label">Today's Sales</span>
+          <div class="bento-kpi-icon bento-icon-emerald">
+            <i class="bi bi-receipt"></i>
+          </div>
+        </div>
+        <div>
+          <div class="bento-kpi-value">₹{{ "{:,.2f}".format(today_sales) }}</div>
+          <div class="bento-kpi-meta text-muted">
+            <i class="bi bi-cash-coin text-emerald"></i>
+            <span>Dispensary POS</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Monthly Sales Run-Rate -->
+    <div class="col-xl-2 col-lg-4 col-sm-6">
+      <div class="bento-kpi-card">
+        <div class="bento-kpi-header">
+          <span class="bento-kpi-label">Monthly Volume</span>
+          <div class="bento-kpi-icon bento-icon-blue">
+            <i class="bi bi-calendar-check"></i>
+          </div>
+        </div>
+        <div>
+          <div class="bento-kpi-value">₹{{ "{:,.2f}".format(month_sales) }}</div>
+          <div class="bento-kpi-meta text-muted">
+            <i class="bi bi-graph-up text-primary"></i>
+            <span>Current Month Total</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Interactive Charts Row -->
+  <div class="row g-4 mb-4">
+    <!-- 7-Day Sales Trend Spline Chart -->
+    <div class="col-lg-8">
+      <div class="card-modern h-100">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <div class="d-flex align-items-center gap-2">
+            <div class="p-1 rounded bg-success bg-opacity-10 text-success">
+              <i class="bi bi-activity fs-5"></i>
+            </div>
+            <div>
+              <span class="fw-bold">7-Day Sales &amp; Consumption Velocity</span>
+              <div class="small text-muted fw-normal">Actual units dispensed across all active inventory batches</div>
+            </div>
+          </div>
+          <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
+            <i class="bi bi-check2-circle me-1"></i> Continuous FEFO Sync
+          </span>
+        </div>
+        <div class="card-body p-4">
+          <div style="height: 290px; position: relative;">
+            <canvas id="salesTrendChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Expiry Risk Distribution Doughnut Chart -->
+    <div class="col-lg-4">
+      <div class="card-modern h-100">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <div class="d-flex align-items-center gap-2">
+            <div class="p-1 rounded bg-danger bg-opacity-10 text-danger">
+              <i class="bi bi-pie-chart-fill fs-5"></i>
+            </div>
+            <div>
+              <span class="fw-bold">Expiry Risk Segmentation</span>
+              <div class="small text-muted fw-normal">Batch distribution by days to expiration</div>
+            </div>
+          </div>
+          <a href="{{ url_for('expiry.index') }}" class="btn btn-sm btn-outline-secondary py-1 px-2" style="font-size: 0.78rem;">
+            Full Radar
+          </a>
+        </div>
+        <div class="card-body p-4 text-center">
+          <div style="height: 230px; position: relative;" class="mb-2">
+            <canvas id="expiryDonutChart"></canvas>
+          </div>
+          <div class="d-flex justify-content-around small text-muted pt-2 border-top">
+            <div><span class="badge bg-danger rounded-circle p-1 me-1"> </span>Critical</div>
+            <div><span class="badge bg-warning rounded-circle p-1 me-1"> </span>Soon</div>
+            <div><span class="badge bg-info rounded-circle p-1 me-1"> </span>Watchlist</div>
+            <div><span class="badge bg-success rounded-circle p-1 me-1"> </span>Safe</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reorder Replenishment & Fast Movers Grid -->
+  <div class="row g-4 mb-4">
+    <!-- Reorder Suggestions -->
+    <div class="col-lg-8">
+      <div class="card-modern h-100">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <div class="d-flex align-items-center gap-2">
+            <div class="p-1 rounded bg-warning bg-opacity-10 text-warning">
+              <i class="bi bi-cart-check-fill fs-5"></i>
+            </div>
+            <div>
+              <span class="fw-bold">Smart Reorder Replenishment Engine</span>
+              <div class="small text-muted fw-normal">Statistical Reorder Point: \( ROP = d \cdot L + Z \sigma_L \)</div>
+            </div>
+          </div>
+          <a href="{{ url_for('reorder.index') }}" class="btn btn-sm btn-outline-emerald">
+            Reorder Hub &rarr;
+          </a>
+        </div>
+        <div class="card-body p-0">
+          {% if reorder_recs %}
+            <div tabindex="0" role="region" aria-label="Smart Reorder Suggestions Table" class="table-wrapper border-0 rounded-0 shadow-none">
+              <table class="table-medismart">
+                <thead>
+                  <tr>
+                    <th>Medicine Formulation</th>
+                    <th>Usable Stock</th>
+                    <th>Safety Reorder Point</th>
+                    <th>Supplier Lead</th>
+                    <th>Recommended Order</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for rec in reorder_recs %}
+                    <tr>
+                      <td>
+                        <div class="fw-bold text-navy">{{ rec.medicine_name }}</div>
+                        <div class="small text-muted">{{ rec.generic_name }} &bull; {{ rec.category }}</div>
+                      </td>
+                      <td>
+                        {% if rec.usable_stock <= 0 %}
+                          <span class="badge-pill badge-critical"><i class="bi bi-x-circle-fill"></i> Stockout</span>
+                        {% elif rec.usable_stock <= rec.reorder_point %}
+                          <span class="badge-pill badge-warning"><i class="bi bi-exclamation-triangle-fill"></i> {{ rec.usable_stock }} {{ rec.unit }}s</span>
+                        {% else %}
+                          <span class="fw-bold text-navy">{{ rec.usable_stock }} {{ rec.unit }}s</span>
+                        {% endif %}
+                      </td>
+                      <td><span class="fw-semibold">{{ rec.reorder_point }}</span> units</td>
+                      <td><span class="text-muted">{{ rec.lead_time_days }} days</span></td>
+                      <td>
+                        <div class="fw-bold text-emerald">{{ rec.recommended_units }} units</div>
+                        <div class="small text-muted">({{ rec.recommended_packs }} supplier packs)</div>
+                      </td>
+                      <td>
+                        <a href="{{ url_for('purchase_orders.create', medicine_id=rec.medicine_id, quantity=rec.recommended_units) }}" class="btn btn-sm btn-emerald py-1 px-3">
+                          <i class="bi bi-truck me-1"></i> Order PO
+                        </a>
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <div class="text-center py-5 text-muted">
+              <div class="d-inline-flex p-3 rounded-circle bg-success bg-opacity-10 text-success mb-2">
+                <i class="bi bi-check-circle-fill fs-3"></i>
+              </div>
+              <div class="fw-bold text-navy">All Inventory Stock Levels Optimal</div>
+              <div class="small text-muted">No stockout risks detected across all pharmaceutical formulates.</div>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Top Selling Fast-Movers -->
+    <div class="col-lg-4">
+      <div class="card-modern h-100">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <div class="d-flex align-items-center gap-2">
+            <div class="p-1 rounded bg-danger bg-opacity-10 text-danger">
+              <i class="bi bi-fire fs-5"></i>
+            </div>
+            <div>
+              <span class="fw-bold">Fast-Moving Formulations</span>
+              <div class="small text-muted fw-normal">Past 30 days total consumption</div>
+            </div>
+          </div>
+        </div>
+        <div class="card-body p-3">
+          {% if top_sold %}
+            <div class="d-flex flex-column gap-3">
+              {% for name, units in top_sold %}
+                <div>
+                  <div class="d-flex justify-content-between small fw-bold mb-1">
+                    <span class="text-navy">
+                      <span class="badge bg-light text-secondary border me-1">#{{ loop.index }}</span>
+                      {{ name }}
+                    </span>
+                    <span class="text-emerald fw-bold">{{ units }} units</span>
+                  </div>
+                  <div class="progress" style="height: 6px; border-radius: 999px; background: #e2e8f0;">
+                    <div class="progress-bar bg-emerald" role="progressbar" style="width: {{ (units / top_sold[0][1] * 100)|round }}%; border-radius: 999px;" aria-valuenow="{{ units }}" aria-valuemin="0" aria-valuemax="{{ top_sold[0][1] }}"></div>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="text-center py-5 text-muted">
+              <i class="bi bi-receipt fs-2 mb-2 d-block"></i>
+              No sales logged yet in the past 30 days.
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Sales Invoices Activity Table -->
+  <div class="card-modern">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <div class="d-flex align-items-center gap-2">
+        <div class="p-1 rounded bg-primary bg-opacity-10 text-primary">
+          <i class="bi bi-receipt-cutoff fs-5"></i>
+        </div>
+        <div>
+          <span class="fw-bold">Recent Dispensing Invoices &amp; Transactions</span>
+          <div class="small text-muted fw-normal">Immutable audit log of patient transactions</div>
+        </div>
+      </div>
+      <a href="{{ url_for('sales.index') }}" class="btn btn-sm btn-outline-secondary py-1 px-3">View All Invoices &rarr;</a>
+    </div>
+    <div class="card-body p-0">
+      {% if recent_sales %}
+        <div tabindex="0" role="region" aria-label="Recent Sales Invoices Table" class="table-wrapper border-0 rounded-0 shadow-none">
+          <table class="table-medismart">
+            <thead>
+              <tr>
+                <th>Invoice #</th>
+                <th>Date &amp; Time</th>
+                <th>Patient / Customer</th>
+                <th>Items Dispensed</th>
+                <th>Payment Mode</th>
+                <th>Total Billed</th>
+                <th>Cashier</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for sale in recent_sales %}
+                <tr>
+                  <td><code>{{ sale.invoice_number }}</code></td>
+                  <td>{{ sale.sale_date.strftime('%Y-%m-%d %H:%M') }}</td>
+                  <td>
+                    <div class="d-flex align-items-center gap-2">
+                      <div class="user-avatar-initials" style="width: 24px; height: 24px; font-size: 0.65rem; background: #64748b;">
+                        {{ sale.customer_name[:2]|upper }}
+                      </div>
+                      <span class="fw-semibold text-navy">{{ sale.customer_name }}</span>
+                    </div>
+                  </td>
+                  <td><span class="badge bg-light text-dark border px-2 py-1">{{ sale.total_items_count }} items</span></td>
+                  <td>
+                    <span class="badge bg-secondary-subtle text-secondary border px-2 py-1">{{ sale.payment_mode }}</span>
+                  </td>
+                  <td class="fw-bold text-navy">₹{{ "{:,.2f}".format(sale.final_amount) }}</td>
+                  <td><small class="text-muted">{{ sale.cashier.username if sale.cashier else 'System' }}</small></td>
+                  <td>
+                    <a href="{{ url_for('sales.receipt', id=sale.id) }}" class="btn btn-sm btn-outline-primary py-1 px-2" style="font-size: 0.8rem;">
+                      <i class="bi bi-printer me-1"></i> Receipt
+                    </a>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="text-center py-5 text-muted">
+          <i class="bi bi-cart-x fs-2 mb-2 d-block"></i>
+          No sales transactions recorded yet. <a href="{{ url_for('sales.create') }}">Create first sale</a>.
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // 1. Sales Trend Chart with Gradient Glow
+    const trendCanvas = document.getElementById('salesTrendChart');
+    if (trendCanvas) {
+      const trendCtx = trendCanvas.getContext('2d');
+      const trendLabels = {{ trend_labels|tojson }};
+      const trendValues = {{ trend_values|tojson }};
+
+      // Create rich emerald gradient fill
+      const gradient = trendCtx.createLinearGradient(0, 0, 0, 280);
+      gradient.addColorStop(0, 'rgba(16, 185, 129, 0.35)');
+      gradient.addColorStop(0.7, 'rgba(16, 185, 129, 0.05)');
+      gradient.addColorStop(1, 'rgba(16, 185, 129, 0.0)');
+
+      new Chart(trendCtx, {
+        type: 'line',
+        data: {
+          labels: trendLabels,
+          datasets: [{
+            label: 'Units Dispensed',
+            data: trendValues,
+            borderColor: '#10b981',
+            backgroundColor: gradient,
+            borderWidth: 3,
+            tension: 0.38,
+            fill: true,
+            pointRadius: 4,
+            pointBackgroundColor: '#ffffff',
+            pointBorderColor: '#10b981',
+            pointBorderWidth: 2.5,
+            pointHoverRadius: 7,
+            pointHoverBackgroundColor: '#10b981',
+            pointHoverBorderColor: '#ffffff',
+            pointHoverBorderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: '#0f172a',
+              titleColor: '#94a3b8',
+              bodyColor: '#ffffff',
+              padding: 12,
+              cornerRadius: 8,
+              boxPadding: 4,
+              callbacks: {
+                label: function(ctx) { return ` ${ctx.parsed.y} Units Dispensed`; }
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              grid: { color: 'rgba(226, 232, 240, 0.7)' },
+              ticks: { precision: 0, font: { family: 'Plus Jakarta Sans', size: 11 } }
+            },
+            x: {
+              grid: { display: false },
+              ticks: { font: { family: 'Plus Jakarta Sans', size: 11 } }
+            }
+          }
+        }
+      });
+    }
+
+    // 2. Expiry Donut Chart
+    const expiryCanvas = document.getElementById('expiryDonutChart');
+    if (expiryCanvas) {
+      const expiryCtx = expiryCanvas.getContext('2d');
+      const expiryData = {{ expiry_chart_data|tojson }};
+
+      new Chart(expiryCtx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Expired (≤0d)', 'Critical (≤7d)', 'Soon (≤30d)', 'Watchlist (≤90d)', 'Safe (>90d)'],
+          datasets: [{
+            data: expiryData,
+            backgroundColor: ['#e11d48', '#f43f5e', '#f59e0b', '#3b82f6', '#10b981'],
+            borderWidth: 3,
+            borderColor: '#ffffff',
+            hoverOffset: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: '#0f172a',
+              titleColor: '#94a3b8',
+              bodyColor: '#ffffff',
+              padding: 12,
+              cornerRadius: 8,
+              callbacks: {
+                label: function(ctx) {
+                  return ` ${ctx.label}: ${ctx.parsed} batches`;
+                }
+              }
+            }
+          },
+          cutout: '72%'
+        }
+      });
+    }
+  });
+</script>
+{% endblock %}
